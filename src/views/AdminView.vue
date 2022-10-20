@@ -11,7 +11,7 @@ const samples = useSamplesStore();
     <h3>Samples requested this week:</h3>
     <ul>
     <li v-for="sample in samples.samples">
-      {{sample.name}}
+      {{sample["name"]}}
     </li>
     </ul>
   </div>
