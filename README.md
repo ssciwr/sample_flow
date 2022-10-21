@@ -1,4 +1,4 @@
-# CircuitSEQ prototype
+# [CircuitSEQ front-end prototype](https://ssciwr.github.io/circuit_seq)
 
 A work-in-progress vue.js prototype of the front end.
 
