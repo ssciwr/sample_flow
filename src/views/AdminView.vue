@@ -12,6 +12,7 @@ const samples = useSamplesStore();
         <DocumentationIcon />
       </template>
       <template #heading>This week</template>
+      <p>(Normally this page would not be accessible to the users)</p>
       <p>{{ samples.samples.length }} samples have been requested so far:</p>
       <table>
         <tr>

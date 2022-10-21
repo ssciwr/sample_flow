@@ -1,17 +1,25 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from "vue-router";
+import { ref } from "vue";
 import TitleItem from "./components/TitleComponent.vue";
+import { useUserStore } from "@/stores/user";
+const user = useUserStore();
+let login_title = ref("Login");
+if (user.email.length > 0) {
+  login_title.value = user.email;
+}
 </script>
 
 <template>
   <header>
     <div class="wrapper">
       <TitleItem />
-
       <nav>
         <RouterLink to="/">About</RouterLink>
-        <RouterLink to="/login">Login</RouterLink>
         <RouterLink to="/samples">My samples</RouterLink>
+        <RouterLink to="/login">{{
+          user.email.length > 0 ? user.email : "Login"
+        }}</RouterLink>
         <RouterLink to="/admin">Admin</RouterLink>
       </nav>
     </div>

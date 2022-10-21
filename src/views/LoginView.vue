@@ -12,7 +12,7 @@ let email_address = "";
       <template #icon>
         <ToolingIcon />
       </template>
-      <template #heading>Login</template>
+      <template #heading>My account</template>
       <template v-if="user.email.length > 0">
         <p>You are currently logged in as:</p>
         <p class="purple">{{ user.email }}</p>

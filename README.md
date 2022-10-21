@@ -1,6 +1,18 @@
 # CircuitSEQ prototype
 
-A simple vue.js prototype of the front end - no backend yet.
+A work-in-progress vue.js prototype of the front end.
+
+## Features
+
+- about page with info on project
+- login page (currently any email address works, no pasword)
+- samples page where logged in users can see their samples and request more
+- you can log out and log in again with a different email address
+- the admin page lists all requested samples from all users
+
+## Notes
+
+- there is no backend yet! i.e. all data is lost when page is refreshed or closed
 
 ## Project Setup
 
@@ -18,19 +30,6 @@ npm run dev
 
 ```sh
 npm run build
-```
-
-### Run Unit Tests with [Vitest](https://vitest.dev/)
-
-```sh
-npm run test:unit
-```
-
-### Run End-to-End Tests with [Cypress](https://www.cypress.io/)
-
-```sh
-npm run build
-npm run test:e2e # or `npm run test:e2e:ci` for headless testing
 ```
 
 ### Lint with [ESLint](https://eslint.org/)

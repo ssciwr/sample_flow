@@ -1,7 +1,7 @@
 <template>
   <div class="greetings">
     <h1 class="dark-purple">CircuitSEQ</h1>
-    <h3>DNA Sequencing.</h3>
+    <h3>Multiplexed nanopore DNA sequencing.</h3>
   </div>
 </template>
 
