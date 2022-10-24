@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Item from "@/components/ListItem.vue";
-import ToolingIcon from "@/components/icons/IconTooling.vue";
+import IconPerson from "@/components/icons/IconPerson.vue";
 import { useUserStore } from "@/stores/user";
 const user = useUserStore();
 let email_address = "";
@@ -10,7 +10,7 @@ let email_address = "";
   <main>
     <Item>
       <template #icon>
-        <ToolingIcon />
+        <IconPerson />
       </template>
       <template #heading>My account</template>
       <template v-if="user.email.length > 0">

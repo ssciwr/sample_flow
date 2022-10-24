@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import Item from "@/components/ListItem.vue";
-import ToolingIcon from "@/components/icons/IconTooling.vue";
+import IconData from "@/components/icons/IconData.vue";
+import IconPlus from "@/components/icons/IconPlus.vue";
 import { useSamplesStore } from "@/stores/samples";
 import { useUserStore } from "@/stores/user";
 const samples = useSamplesStore();
@@ -18,7 +19,7 @@ function add() {
   <main>
     <Item>
       <template #icon>
-        <ToolingIcon />
+        <IconData />
       </template>
       <template #heading>My samples</template>
       <template v-if="samples.get_samples(user.email).length > 0">
@@ -43,7 +44,7 @@ function add() {
     </Item>
     <Item>
       <template #icon>
-        <ToolingIcon />
+        <IconPlus />
       </template>
       <template #heading>Submit a sample</template>
       <p>To submit a new sample, enter a sample name:</p>

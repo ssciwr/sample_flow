@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import Item from "@/components/ListItem.vue";
-import DocumentationIcon from "@/components/icons/IconDocumentation.vue";
-import CommunityIcon from "@/components/icons/IconCommunity.vue";
+import IconLightbulb from "@/components/icons/IconLightbulb.vue";
+import IconInfo from "@/components/icons/IconInfo.vue";
+import IconChat from "@/components/icons/IconChat.vue";
 import { useSamplesStore } from "@/stores/samples";
 const samples = useSamplesStore();
 </script>
@@ -10,7 +11,7 @@ const samples = useSamplesStore();
   <main>
     <Item>
       <template #icon>
-        <DocumentationIcon />
+        <IconLightbulb />
       </template>
       <template #heading>About</template>
       <p>
@@ -27,11 +28,23 @@ const samples = useSamplesStore();
     </Item>
     <Item>
       <template #icon>
-        <CommunityIcon />
+        <IconChat />
       </template>
       <template #heading>Feedback</template>
       Questions or feedback about this service are welcome at
       <a href="mailto:e.green@dkfz.de?subject=circuitSEQ">e.green@dkfz.de</a>
+    </Item>
+    <Item>
+      <template #icon>
+        <IconInfo />
+      </template>
+      <template #heading>Funding</template>
+      This work was funded by the
+      <a href="https://www.health-life-sciences.de/?lang=de"
+        >Heidelberg Mannheim Life Sciences alliance</a
+      >
+      through an 'Explore!Tech' grant awarded to Drs Ed Green, Liam Keegan and
+      Kim Remans.
     </Item>
   </main>
 </template>
