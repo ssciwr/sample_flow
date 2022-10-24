@@ -31,7 +31,7 @@ const samples = useSamplesStore();
       </template>
       <template #heading>Feedback</template>
       Questions or feedback about this service are welcome at
-      <a href="mailto:email@address.com">email@address.com</a>
+      <a href="mailto:e.green@dkfz.de?subject=circuitSEQ">e.green@dkfz.de</a>
     </Item>
   </main>
 </template>
