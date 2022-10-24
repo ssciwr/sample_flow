@@ -11,6 +11,11 @@ body {
   font-weight: normal;
 }
 
+.bi {
+  width: 28px;
+  height: 28px;
+}
+
 a,
 .purple {
   text-decoration: none;
