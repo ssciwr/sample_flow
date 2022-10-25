@@ -3,5 +3,6 @@ import { defineStore } from "pinia";
 
 export const useUserStore = defineStore("user", () => {
   const email = ref("");
-  return { email };
+  const token = ref("");
+  return { email, token };
 });
