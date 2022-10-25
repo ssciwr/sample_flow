@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import Item from "@/components/ListItem.vue";
-import IconBook from "@/components/icons/IconBook.vue";
 import { useSamplesStore } from "@/stores/samples";
 const samples = useSamplesStore();
 </script>
@@ -9,7 +8,7 @@ const samples = useSamplesStore();
   <main>
     <Item>
       <template #icon>
-        <IconBook />
+        <i class="bi-gear"></i>
       </template>
       <template #heading>This week</template>
       <p>(Normally this page would not be accessible to the users)</p>
