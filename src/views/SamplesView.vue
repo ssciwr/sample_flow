@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import Item from "@/components/ListItem.vue";
-import IconData from "@/components/icons/IconData.vue";
-import IconPlus from "@/components/icons/IconPlus.vue";
 import { useSamplesStore } from "@/stores/samples";
 import { useUserStore } from "@/stores/user";
 const samples = useSamplesStore();
@@ -19,7 +17,7 @@ function add() {
   <main>
     <Item>
       <template #icon>
-        <IconData />
+        <i class="bi-clipboard-data"></i>
       </template>
       <template #heading>My samples</template>
       <template v-if="samples.get_samples(user.email).length > 0">
@@ -44,7 +42,7 @@ function add() {
     </Item>
     <Item>
       <template #icon>
-        <IconPlus />
+        <i class="bi-clipboard-plus"></i>
       </template>
       <template #heading>Submit a sample</template>
       <p>To submit a new sample, enter a sample name:</p>

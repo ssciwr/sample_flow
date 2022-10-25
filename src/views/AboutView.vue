@@ -1,8 +1,5 @@
 <script setup lang="ts">
 import Item from "@/components/ListItem.vue";
-import IconLightbulb from "@/components/icons/IconLightbulb.vue";
-import IconInfo from "@/components/icons/IconInfo.vue";
-import IconChat from "@/components/icons/IconChat.vue";
 import { useSamplesStore } from "@/stores/samples";
 const samples = useSamplesStore();
 </script>
@@ -11,7 +8,7 @@ const samples = useSamplesStore();
   <main>
     <Item>
       <template #icon>
-        <IconLightbulb />
+        <i class="bi-lightbulb"></i>
       </template>
       <template #heading>About</template>
       <p>
@@ -28,7 +25,7 @@ const samples = useSamplesStore();
     </Item>
     <Item>
       <template #icon>
-        <IconChat />
+        <i class="bi-chat"></i>
       </template>
       <template #heading>Feedback</template>
       Questions or feedback about this service are welcome at
@@ -36,7 +33,7 @@ const samples = useSamplesStore();
     </Item>
     <Item>
       <template #icon>
-        <IconInfo />
+        <i class="bi-info-circle"></i>
       </template>
       <template #heading>Funding</template>
       This work was funded by the
