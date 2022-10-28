@@ -18,6 +18,9 @@ from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from dataclasses import dataclass
 
+from circuit_seq_server.logger import get_logger
+from circuit_seq_server.primary_key import get_primary_key
+
 app = Flask("CircuitSeqServer")
 
 app.config["JWT_SECRET_KEY"] = secrets.token_urlsafe(64)
@@ -31,21 +34,6 @@ CORS(app)  # todo: limit ports / routes
 jwt = JWTManager(app)
 db = SQLAlchemy(app)
 ph = argon2.PasswordHasher()
-
-
-def get_logger(name: str):
-    logger = logging.getLogger(name)
-    logger.setLevel(logging.DEBUG)
-    handler = logging.StreamHandler()
-    handler.setFormatter(
-        logging.Formatter(
-            "%(name)s  | [%(asctime)s %(levelname)s] %(message)s", "%H:%M:%S"
-        )
-    )
-    logger.addHandler(handler)
-    return logger
-
-
 logger = get_logger("CircuitSeqServer")
 
 
@@ -90,37 +78,14 @@ def add_new_user(email: str, password: str) -> bool:
 
 
 def add_new_sample(email: str, name: str) -> Optional[Sample]:
-    n_rows = 8
-    n_cols = 12
-    max_samples = n_rows * n_cols
-    week = 1  # todo: calculate this from current date
-    row_labels = [
-        "A",
-        "B",
-        "C",
-        "D",
-        "E",
-        "F",
-        "G",
-        "H",
-        "I",
-        "J",
-        "K",
-        "L",
-        "M",
-        "N",
-        "O",
-        "P",
-    ]
     count = len(
         db.session.execute(db.select(Sample)).all()
     )  # todo: filter only samples from current week
-    if count >= max_samples:
+    week = 1 #todo: calculate week number based on date
+    key = get_primary_key(week, count)
+    if key is None:
         return None
 
-    i_row = math.floor(count / n_cols)
-    i_col = count % n_cols
-    key = f"{week}_{row_labels[i_row]}{i_col + 1}"
     new_sample = Sample(email=email, name=name, primary_key=key)
     db.session.add(new_sample)
     db.session.commit()
