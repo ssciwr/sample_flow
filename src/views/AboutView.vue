@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import Item from "@/components/ListItem.vue";
-import { useSamplesStore } from "@/stores/samples";
-const samples = useSamplesStore();
+import {ref} from "vue";
+import apiClient from "@/api-client";
+const remaining = ref(0);
+apiClient.get("remaining").then((response) => {
+  console.log(response);
+  remaining.value = response.data.remaining;
+});
+
 </script>
 
 <template>
@@ -19,7 +25,7 @@ const samples = useSamplesStore();
         <li>Samples must be submitted by Wednesday each week.</li>
         <li>Results will be available on Friday.</li>
         <li>
-          Remaining available samples this week: {{ samples.num_remaining() }}.
+          Remaining available samples this week: {{ remaining }}.
         </li>
       </ul>
     </Item>

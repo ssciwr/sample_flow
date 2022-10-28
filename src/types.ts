@@ -1,8 +1,14 @@
 export type Sample = {
-  index: number;
-  label: string;
+  id: number;
+  // label: string;
   primary_key: string;
   name: string;
   email: string;
-  date: Date;
+  // date: Date;
 };
+
+export type User = {
+  id: number;
+  email: string;
+  activated: boolean;
+}

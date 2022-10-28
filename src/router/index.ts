@@ -21,7 +21,6 @@ const router = createRouter({
       component: () => import("../views/SamplesView.vue"),
       beforeEnter: (to, from) => {
         const user = useUserStore();
-        console.log(from, to);
         if (user.email.length === 0 && to.name !== "Login") {
           return { name: "login" };
         }
@@ -31,6 +30,12 @@ const router = createRouter({
       path: "/admin",
       name: "admin",
       component: () => import("../views/AdminView.vue"),
+      beforeEnter: (to, from) => {
+        const user = useUserStore();
+        if (user.email.length === 0 && to.name !== "Login") {
+          return { name: "login" };
+        }
+      },
     },
   ],
 });
