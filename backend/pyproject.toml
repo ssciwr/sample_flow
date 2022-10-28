@@ -1,16 +1,7 @@
-# This section describes the requirements of the build/installation
-# process itself. Being able to do this was the original reason to
-# introduce pyproject.toml
 [build-system]
-requires = [
-    "setuptools >=61",
-    "setuptools_scm >=7",
-]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
-# This section provides general project metadata that is used across
-# a variety of build tools. Notably, the version specified here is the
-# single source of truth for circuit_seq_server's version
 [project]
 name = "circuit_seq_server"
 description = "Add short description here"
@@ -29,7 +20,7 @@ classifiers = [
 dependencies = ["flask", "flask-cors", "flask-jwt-extended", "flask-sqlalchemy", "argon2-cffi", "click"]
 
 [project.scripts]
-circuit_seq_server = "circuit_seq_server.__main__:main"
+circuit_seq_server = "circuit_seq_server.main:main"
 
 [project.optional-dependencies]
 tests = [
@@ -42,24 +33,9 @@ docs = [
     "sphinx_rtd_theme",
 ]
 
+[tool.setuptools.dynamic]
+version = { attr = "circuit_seq_server.__version__" }
 
-# The following section contains setuptools-specific configuration
-# options. For a full reference of available options, check the overview
-# at https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html
-[tool.setuptools]
-packages = [
-    "circuit_seq_server",
-]
-
-# Configure setuptools_scm, which extracts the version number from
-# the version control system. For more information see its documentation:
-# https://github.com/pypa/setuptools_scm
-[tool.setuptools_scm]
-version_scheme = "post-release"
-local_scheme = "node-and-date"
-write_to = "circuit_seq_server/_version.py"
-
-# The following is the configuration for the pytest test suite
 [tool.pytest.ini_options]
 testpaths = [
     "tests",
