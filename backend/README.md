@@ -1,11 +1,11 @@
-# CircuitSeq Server
+# CircuitSeq Backend
 
-A work-in-progress Flask prototype of the back end.
+A work-in-progress Flask prototype of the backend.
 
 ## Installation
 
 ```pycon
-pip install git+https://github.com/ssciwr/circuit_seq_server.git
+pip install .
 ```
 
 ## Use
@@ -13,7 +13,7 @@ pip install git+https://github.com/ssciwr/circuit_seq_server.git
 To start a local development server for testing purposes:
 
 ```bash
-python -m circuit_seq_server
+circuit_seq_server
 ```
 
 ## Acknowledgments
