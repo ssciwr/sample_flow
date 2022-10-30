@@ -1,28 +1,13 @@
 from typing import Optional
+import string
 import math
+
 
 def get_primary_key(week: int, count: int) -> Optional[str]:
     n_rows = 8
     n_cols = 12
     max_samples = n_rows * n_cols
-    row_labels = [
-        "A",
-        "B",
-        "C",
-        "D",
-        "E",
-        "F",
-        "G",
-        "H",
-        "I",
-        "J",
-        "K",
-        "L",
-        "M",
-        "N",
-        "O",
-        "P",
-    ]
+    row_labels = string.ascii_uppercase
     if count >= max_samples:
         return None
 

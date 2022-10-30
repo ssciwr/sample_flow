@@ -1,6 +1,6 @@
 # CircuitSeq Backend
 
-A work-in-progress Flask prototype of the backend.
+A work-in-progress Flask REST API prototype of the backend.
 
 ## Installation
 

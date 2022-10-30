@@ -1,8 +1,6 @@
 from typing import Optional
-import math
 import secrets
 import argon2
-import logging
 import click
 
 from flask import Flask
@@ -51,6 +49,7 @@ class User(db.Model):
     email = db.Column(db.Text, nullable=False, unique=True)
     password_hash = db.Column(db.Text, nullable=False)
     activated = db.Column(db.Boolean, nullable=False)
+    is_admin = db.Column(db.Boolean, nullable=False)
 
     def set_password(self, old_password: str, new_password: str) -> bool:
         if self.check_password(old_password):
@@ -70,9 +69,16 @@ class User(db.Model):
         return True
 
 
-def add_new_user(email: str, password: str) -> bool:
+def add_new_user(email: str, password: str, is_admin: bool = False) -> bool:
     # todo: active should be false until they click on emailed activation link
-    db.session.add(User(email=email, password_hash=ph.hash(password), activated=True))
+    db.session.add(
+        User(
+            email=email,
+            password_hash=ph.hash(password),
+            activated=True,
+            is_admin=is_admin,
+        )
+    )
     db.session.commit()
     return True
 
@@ -81,7 +87,7 @@ def add_new_sample(email: str, name: str) -> Optional[Sample]:
     count = len(
         db.session.execute(db.select(Sample)).all()
     )  # todo: filter only samples from current week
-    week = 1 #todo: calculate week number based on date
+    week = 1  # todo: calculate week number based on date
     key = get_primary_key(week, count)
     if key is None:
         return None
@@ -170,22 +176,24 @@ def samples():
 @app.route("/allsamples", methods=["GET"])
 @jwt_required()
 def all_samples():
-    # todo: should only be accessible to admin users
-    all_user_samples = db.session.execute(db.select(Sample)).scalars().all()
-    return jsonify(samples=all_user_samples)
+    if current_user.is_admin:
+        all_user_samples = db.session.execute(db.select(Sample)).scalars().all()
+        return jsonify(samples=all_user_samples)
+    return jsonify("Admin account required"), 401
 
 
 @app.route("/allusers", methods=["GET"])
 @jwt_required()
 def all_users():
-    # todo: should only be accessible to admin users
-    users = db.session.execute(db.select(User)).scalars().all()
-    return jsonify(
-        users=[
-            {"id": user.id, "email": user.email, "activated": user.activated}
-            for user in users
-        ]
-    )
+    if current_user.is_admin:
+        users = db.session.execute(db.select(User)).scalars().all()
+        return jsonify(
+            users=[
+                {"id": user.id, "email": user.email, "activated": user.activated}
+                for user in users
+            ]
+        )
+    return jsonify("Admin account required"), 401
 
 
 @app.route("/addsample", methods=["POST"])
@@ -200,12 +208,24 @@ def add_sample():
         return jsonify(sample=new_sample)
     return jsonify(message="No more samples available this week."), 401
 
+
 @click.command()
-@click.option('--host', default='127.0.0.1', show_default=True)
-@click.option('--port', default=5000, show_default=True)
-def main(host:str, port:int):
+@click.option("--host", default="127.0.0.1", show_default=True)
+@click.option("--port", default=5000, show_default=True)
+def main(host: str, port: int):
     with app.app_context():
         db.create_all()
+        if (
+            db.session.execute(
+                db.select(User).filter_by(id="admin")
+            ).scalar_one_or_none()
+            is None
+        ):
+            print("admin")
+            # temporary default admin user for testing purposes
+            add_new_user("admin@embl.de", "admin", True)
+            # temporary user for testing purposes
+            add_new_user("user@embl.de", "user", False)
 
     app.run(host=host, port=port)
 
