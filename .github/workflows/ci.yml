@@ -13,6 +13,7 @@ concurrency:
 
 jobs:
   frontend:
+    name: "Frontend :: node ${{ matrix.node-version }}"
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -31,6 +32,7 @@ jobs:
       - run: npm run build
   backend:
     runs-on: ubuntu-latest
+    name: "Backend :: Python ${{ matrix.python-version }}"
     strategy:
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11"]
@@ -52,6 +54,7 @@ jobs:
           verbose: true
   docker:
     runs-on: ubuntu-latest
+    name: "Docker"
     steps:
       - uses: actions/checkout@v3
       - run: docker-compose build

@@ -11,8 +11,19 @@ To run the website locally in docker containers (on linux, with docker-compose i
 ```sh
 git clone https://github.com/ssciwr/circuit_seq.git
 cd circuit_seq
-docker-compose up
+docker-compose up --build
 ```
+
+The website is then served at http://localhost:8080/
+
+Built-in accounts for testing:
+
+- admin account
+	- email: admin@embl.de
+	- password: admin
+- user account
+	- email: user@embl.de
+	- password: user
 
 ## Backend
 
