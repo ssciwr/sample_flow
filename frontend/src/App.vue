@@ -19,8 +19,12 @@ const login_title = computed(() => {
       <nav>
         <RouterLink to="/">About</RouterLink>
         <RouterLink to="/samples">My samples</RouterLink>
+        <RouterLink
+          v-if="userStore.user !== null && userStore.user.is_admin"
+          to="/admin"
+          >Admin</RouterLink
+        >
         <RouterLink to="/login">{{ login_title }}</RouterLink>
-        <RouterLink v-if="userStore.user !== null && userStore.user.is_admin" to="/admin">Admin</RouterLink>
       </nav>
     </div>
   </header>

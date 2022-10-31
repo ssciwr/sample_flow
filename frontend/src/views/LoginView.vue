@@ -11,13 +11,13 @@ const login_password = ref("");
 const login_error_message = ref("");
 
 function validate_email(email: string) {
-  var re = /\S+@((\S*heidelberg)|embl|dkfz)\.de$/;
+  const re = /\S+@((\S*heidelberg)|embl|dkfz)\.de$/;
   return re.test(email);
 }
 
 function validate_password(password: string) {
   // at least 8 chars, including lower-case, upper-case, number
-  var re = /^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9]).{8,}$/;
+  const re = /^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9]).{8,}$/;
   return re.test(password);
 }
 

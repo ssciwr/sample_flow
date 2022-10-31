@@ -26,7 +26,7 @@ app.config["JWT_SECRET_KEY"] = secrets.token_urlsafe(64)
 app.config[
     "SQLALCHEMY_DATABASE_URI"
 ] = "sqlite:///CircuitSeq.db"  # todo: persist to disk
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False  # todo: needed or not?
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 CORS(app)  # todo: limit ports / routes
 
@@ -41,7 +41,7 @@ class Sample(db.Model):
     id: int = db.Column(db.Integer, primary_key=True)
     email: str = db.Column(db.String(256), nullable=False)
     primary_key: str = db.Column(db.String(32), nullable=False, unique=True)
-    name: str = db.Column(db.String(256), nullable=False)
+    name: str = db.Column(db.String(128), nullable=False)
 
 
 @dataclass
