@@ -7,6 +7,7 @@ from flask import Flask
 from flask import jsonify
 from flask import request
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.exc import IntegrityError
 
 from flask_jwt_extended import create_access_token
 from flask_jwt_extended import current_user
@@ -143,7 +144,7 @@ def login():
         return jsonify("Incorrect password"), 401
     logger.info(f"  -> returning JWT access token")
     access_token = create_access_token(identity=user)
-    return jsonify(user=current_user.as_dist(), access_token=access_token)
+    return jsonify(user=user.as_dict(), access_token=access_token)
 
 
 @app.route("/signup", methods=["POST"])
@@ -207,23 +208,27 @@ def add_sample():
     return jsonify(message="No more samples available this week."), 401
 
 
+def add_temporary_users_for_testing():
+    # add temporary testing users if not already in db
+    try:
+        # temporary default admin user for testing purposes
+        add_new_user("admin@embl.de", "admin", True)
+    except IntegrityError as e:
+        logger.info(e)
+    try:
+        # temporary user for testing purposes
+        add_new_user("user@embl.de", "user", False)
+    except IntegrityError as e:
+        logger.info(e)
+
+
 @click.command()
 @click.option("--host", default="127.0.0.1", show_default=True)
 @click.option("--port", default=5000, show_default=True)
 def main(host: str, port: int):
     with app.app_context():
         db.create_all()
-        if (
-            db.session.execute(
-                db.select(User).filter_by(id="admin")
-            ).scalar_one_or_none()
-            is None
-        ):
-            print("admin")
-            # temporary default admin user for testing purposes
-            add_new_user("admin@embl.de", "admin", True)
-            # temporary user for testing purposes
-            add_new_user("user@embl.de", "user", False)
+        add_temporary_users_for_testing()
 
     app.run(host=host, port=port)
 
