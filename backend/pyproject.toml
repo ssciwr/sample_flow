@@ -17,7 +17,7 @@ classifiers = [
     "Operating System :: OS Independent",
     "License :: OSI Approved :: MIT License",
 ]
-dependencies = ["flask", "flask-cors", "flask-jwt-extended", "flask-sqlalchemy", "argon2-cffi", "click"]
+dependencies = ["flask", "flask-cors", "flask-jwt-extended", "flask-sqlalchemy", "argon2-cffi", "click", "biopython"]
 
 [project.scripts]
 circuit_seq_server = "circuit_seq_server.main:main"

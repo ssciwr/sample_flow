@@ -15,4 +15,27 @@ apiClient.interceptors.request.use(function (config) {
   return config;
 });
 
-export default apiClient;
+function download_reference_sequence(primary_key: string) {
+  apiClient
+    .post(
+      "reference_sequence",
+      {
+        primary_key: primary_key,
+      },
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        responseType: "blob",
+      }
+    )
+    .then((response) => {
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `${primary_key}_reference_sequence.fasta`);
+      document.body.appendChild(link);
+      link.click();
+    });
+}
+export { apiClient, download_reference_sequence };

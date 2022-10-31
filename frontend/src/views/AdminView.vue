@@ -2,7 +2,7 @@
 import Item from "@/components/ListItem.vue";
 import { ref } from "vue";
 import type { Sample, User } from "@/types";
-import apiClient from "@/api-client";
+import { apiClient, download_reference_sequence } from "@/api-client";
 
 const samples = ref([] as Sample[]);
 apiClient.get("allsamples").then((response) => {
@@ -30,13 +30,25 @@ apiClient.get("allusers").then((response) => {
           <th>Primary Key</th>
           <th>Email</th>
           <th>Sample Name</th>
-          <th>Requested on</th>
+          <th>Reference Sequence</th>
         </tr>
         <tr v-for="sample in samples" :key="sample.id">
           <td>{{ sample["primary_key"] }}</td>
           <td>{{ sample["email"] }}</td>
           <td>{{ sample["name"] }}</td>
-          <!--          <td>{{ sample["date"].toUTCString() }}</td>-->
+          <td>
+            <template v-if="sample['reference_sequence_description']">
+              <a
+                href=""
+                @click.prevent="
+                  download_reference_sequence(sample['primary_key'])
+                "
+              >
+                {{ sample["reference_sequence_description"] }}
+              </a>
+            </template>
+            <template v-else> - </template>
+          </td>
         </tr>
       </table>
     </Item>

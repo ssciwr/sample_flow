@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Item from "@/components/ListItem.vue";
 import { ref } from "vue";
-import apiClient from "@/api-client";
+import { apiClient } from "@/api-client";
 const remaining = ref(0);
 apiClient.get("remaining").then((response) => {
   console.log(response);
@@ -39,9 +39,10 @@ apiClient.get("remaining").then((response) => {
         <i class="bi-book"></i>
       </template>
       <template #heading>References</template>
-      This software implements a variant of the Circuit-seq method published by the McKenna lab:
+      This software implements a variant of the Circuit-seq method published by
+      the McKenna lab:
       <a href="https://pubs.acs.org/doi/pdf/10.1021/acssynbio.2c00126"
-      >ACS Synth. Biol. 2022, 11, 2238−2246</a
+        >ACS Synth. Biol. 2022, 11, 2238−2246</a
       >
     </Item>
     <Item>
@@ -51,7 +52,7 @@ apiClient.get("remaining").then((response) => {
       <template #heading>Funding</template>
       This work was funded by the
       <a href="https://www.health-life-sciences.de/?lang=de"
-      >Heidelberg Mannheim Life Sciences alliance</a
+        >Heidelberg Mannheim Life Sciences alliance</a
       >
       through an 'Explore!Tech' grant awarded to Drs Ed Green, Liam Keegan and
       Kim Remans.

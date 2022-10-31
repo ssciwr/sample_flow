@@ -1,13 +1,16 @@
-from typing import Optional
+from __future__ import annotations
+from typing import Optional, Any
 import secrets
 import argon2
 import click
+import tempfile
+import pathlib
 
+import flask
 from flask import Flask
 from flask import jsonify
 from flask import request
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.exc import IntegrityError
 
 from flask_jwt_extended import create_access_token
 from flask_jwt_extended import current_user
@@ -16,6 +19,8 @@ from flask_jwt_extended import JWTManager
 
 from flask_cors import CORS
 from dataclasses import dataclass
+
+from Bio import SeqIO
 
 from circuit_seq_server.logger import get_logger
 from circuit_seq_server.primary_key import get_primary_key
@@ -27,6 +32,7 @@ app.config[
     "SQLALCHEMY_DATABASE_URI"
 ] = "sqlite:///CircuitSeq.db"  # todo: persist to disk
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["MAX_CONTENT_LENGTH"] = 64 * 1000 * 1000  # 64mb max file upload
 
 CORS(app)  # todo: limit ports / routes
 
@@ -42,6 +48,7 @@ class Sample(db.Model):
     email: str = db.Column(db.String(256), nullable=False)
     primary_key: str = db.Column(db.String(32), nullable=False, unique=True)
     name: str = db.Column(db.String(128), nullable=False)
+    reference_sequence_description: str = db.Column(db.String(256), nullable=True)
 
 
 @dataclass
@@ -95,7 +102,9 @@ def add_new_user(email: str, password: str, is_admin: bool = False) -> bool:
     return True
 
 
-def add_new_sample(email: str, name: str) -> Optional[Sample]:
+def add_new_sample(
+    email: str, name: str, reference_sequence_file: Optional[Any]
+) -> Optional[Sample]:
     count = len(
         db.session.execute(db.select(Sample)).all()
     )  # todo: filter only samples from current week
@@ -103,8 +112,33 @@ def add_new_sample(email: str, name: str) -> Optional[Sample]:
     key = get_primary_key(week, count)
     if key is None:
         return None
+    reference_sequence_description: Optional[str] = None
+    if reference_sequence_file is not None:
+        filename = f"{key}_{name}.fasta"
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            temp_file = pathlib.Path(tmp_dir) / filename
+            logger.info(
+                f"Saving {reference_sequence_file} to temporary file {temp_file}"
+            )
+            reference_sequence_file.save(temp_file)
+            try:
+                logger.info(f"Parsing fasta file")
+                record = next(SeqIO.parse(temp_file, "fasta").records)
+                logger.info(record.id)
+                logger.info(record.description)
+                logger.info(record.format("fasta"))
+                logger.info(f"Writing fasta file to {filename}")
+                SeqIO.write(record, filename, "fasta")
+                reference_sequence_description = record.description
+            except Exception as e:
+                logger.info(f"Failed to parse fasta file: {e}")
 
-    new_sample = Sample(email=email, name=name, primary_key=key)
+    new_sample = Sample(
+        email=email,
+        name=name,
+        primary_key=key,
+        reference_sequence_description=reference_sequence_description,
+    )
     db.session.add(new_sample)
     db.session.commit()
     return new_sample
@@ -173,8 +207,39 @@ def samples():
         .scalars()
         .all()
     )
-    print(user_samples, flush=True)
     return jsonify(samples=user_samples)
+
+
+@app.route("/reference_sequence", methods=["POST"])
+@jwt_required()
+def reference_sequence():
+    primary_key = request.json.get("primary_key", None)
+    logger.info(
+        f"User {current_user.email} requesting reference sequence with key {primary_key}"
+    )
+    filters = {"primary_key": primary_key}
+    if not current_user.is_admin:
+        filters["email"]=current_user.email
+    user_sample = db.session.execute(
+        db.select(Sample).filter_by(**filters)
+    ).scalar_one_or_none()
+    if user_sample is None:
+        logger.info(f"  -> sample with key {primary_key} not found")
+        return jsonify("Sample not found"), 401
+    if user_sample.reference_sequence_description is None:
+        logger.info(
+            f"  -> sample with key {primary_key} found but does not contain a reference sequence"
+        )
+        return jsonify("Sample does not contain a reference sequence"), 401
+    logger.info(
+        f"  -> found reference sequence with description {user_sample.reference_sequence_description}"
+    )
+    file = pathlib.Path(f"{user_sample.primary_key}_{user_sample.name}.fasta")
+    if not file.is_file():
+        logger.info(f"  -> fasta file {file} not found")
+        return jsonify("Fasta file not found"), 401
+    logger.info(f"Returning fasta file {file}")
+    return flask.send_file(file, as_attachment=True)
 
 
 @app.route("/allsamples", methods=["GET"])
@@ -199,16 +264,17 @@ def all_users():
 @jwt_required()
 def add_sample():
     email = current_user.email
-    name = request.json.get("name", None)
+    name = request.form.to_dict().get("name", "")
+    reference_sequence_file = request.files.to_dict().get("file", None)
     logger.info(f"Adding sample {name} from {email}")
-    new_sample = add_new_sample(email, name)
+    new_sample = add_new_sample(email, name, reference_sequence_file)
     if new_sample is not None:
         logger.info(f"  - > success")
         return jsonify(sample=new_sample)
     return jsonify(message="No more samples available this week."), 401
 
 
-def add_temporary_users_for_testing():
+def _add_temporary_users_for_testing():
     # add temporary testing users if not already in db
     for (name, is_admin) in [("admin", True), ("user", False)]:
         email = f"{name}@embl.de"
@@ -224,7 +290,7 @@ def add_temporary_users_for_testing():
 def main(host: str, port: int):
     with app.app_context():
         db.create_all()
-        add_temporary_users_for_testing()
+        _add_temporary_users_for_testing()
 
     app.run(host=host, port=port)
 

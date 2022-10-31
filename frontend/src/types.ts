@@ -4,6 +4,7 @@ export type Sample = {
   primary_key: string;
   name: string;
   email: string;
+  reference_sequence_description: string | null;
   // date: Date;
 };
 
