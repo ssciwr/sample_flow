@@ -210,16 +210,12 @@ def add_sample():
 
 def add_temporary_users_for_testing():
     # add temporary testing users if not already in db
-    try:
-        # temporary default admin user for testing purposes
-        add_new_user("admin@embl.de", "admin", True)
-    except IntegrityError as e:
-        logger.info(e)
-    try:
-        # temporary user for testing purposes
-        add_new_user("user@embl.de", "user", False)
-    except IntegrityError as e:
-        logger.info(e)
+    for (name, is_admin) in [("admin", True), ("user", False)]:
+        email = f"{name}@embl.de"
+        if not db.session.execute(
+            db.select(User).filter_by(email=email)
+        ).scalar_one_or_none():
+            add_new_user(email, name, is_admin)
 
 
 @click.command()

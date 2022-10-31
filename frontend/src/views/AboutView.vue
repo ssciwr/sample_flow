@@ -36,12 +36,22 @@ apiClient.get("remaining").then((response) => {
     </Item>
     <Item>
       <template #icon>
+        <i class="bi-book"></i>
+      </template>
+      <template #heading>References</template>
+      This software implements a variant of the Circuit-seq method published by the McKenna lab:
+      <a href="https://pubs.acs.org/doi/pdf/10.1021/acssynbio.2c00126"
+      >ACS Synth. Biol. 2022, 11, 2238−2246</a
+      >
+    </Item>
+    <Item>
+      <template #icon>
         <i class="bi-info-circle"></i>
       </template>
       <template #heading>Funding</template>
       This work was funded by the
       <a href="https://www.health-life-sciences.de/?lang=de"
-        >Heidelberg Mannheim Life Sciences alliance</a
+      >Heidelberg Mannheim Life Sciences alliance</a
       >
       through an 'Explore!Tech' grant awarded to Drs Ed Green, Liam Keegan and
       Kim Remans.
