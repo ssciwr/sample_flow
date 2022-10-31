@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from "vue-router";
-import { ref } from "vue";
+import { computed } from "vue";
 import TitleItem from "./components/TitleComponent.vue";
 import { useUserStore } from "@/stores/user";
-const user = useUserStore();
-let login_title = ref("Login");
-if (user.email.length > 0) {
-  login_title.value = user.email;
-}
+const userStore = useUserStore();
+const login_title = computed(() => {
+  if (userStore.user !== null) {
+    return userStore.user.email;
+  }
+  return "Login";
+});
 </script>
 
 <template>
@@ -17,9 +19,7 @@ if (user.email.length > 0) {
       <nav>
         <RouterLink to="/">About</RouterLink>
         <RouterLink to="/samples">My samples</RouterLink>
-        <RouterLink to="/login">{{
-          user.email.length > 0 ? user.email : "Login"
-        }}</RouterLink>
+        <RouterLink to="/login">{{ login_title }}</RouterLink>
         <RouterLink to="/admin">Admin</RouterLink>
       </nav>
     </div>

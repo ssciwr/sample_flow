@@ -20,8 +20,8 @@ const router = createRouter({
       name: "samples",
       component: () => import("../views/SamplesView.vue"),
       beforeEnter: (to, from) => {
-        const user = useUserStore();
-        if (user.email.length === 0 && to.name !== "Login") {
+        const userStore = useUserStore();
+        if (userStore.user === null && to.name !== "Login") {
           return { name: "login" };
         }
       },
@@ -31,8 +31,11 @@ const router = createRouter({
       name: "admin",
       component: () => import("../views/AdminView.vue"),
       beforeEnter: (to, from) => {
-        const user = useUserStore();
-        if (user.email.length === 0 && to.name !== "Login") {
+        const userStore = useUserStore();
+        if (
+          (userStore.user === null || !userStore.user.is_admin) &&
+          to.name !== "Login"
+        ) {
           return { name: "login" };
         }
       },

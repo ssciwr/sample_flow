@@ -6,9 +6,12 @@ import type { Sample } from "@/types";
 const new_sample_name = ref("");
 const samples = ref([] as Sample[]);
 
-  apiClient.get("samples").then((response) => {
+apiClient
+  .get("samples")
+  .then((response) => {
     samples.value = response.data.samples;
-  }).catch((error) => {
+  })
+  .catch((error) => {
     console.log(error);
   });
 
@@ -19,11 +22,10 @@ function add_sample() {
     })
     .then((response) => {
       console.log(response);
-      samples.value.push(response.data.sample)
+      samples.value.push(response.data.sample);
     });
   new_sample_name.value = "";
 }
-
 </script>
 
 <template>
@@ -40,10 +42,7 @@ function add_sample() {
             <th>Primary Key</th>
             <th>Sample Name</th>
           </tr>
-          <tr
-            v-for="sample in samples"
-            :key="sample.id"
-          >
+          <tr v-for="sample in samples" :key="sample.id">
             <td>{{ sample["primary_key"] }}</td>
             <td>{{ sample["name"] }}</td>
           </tr>

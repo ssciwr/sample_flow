@@ -1,8 +1,9 @@
 import { ref } from "vue";
+import type { User } from "@/types";
 import { defineStore } from "pinia";
 
 export const useUserStore = defineStore("user", () => {
-  const email = ref("");
+  const user = ref(null as User | null);
   const token = ref("");
-  return { email, token };
+  return { user, token };
 });

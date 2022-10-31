@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Item from "@/components/ListItem.vue";
-import { ref } from 'vue'
+import { ref } from "vue";
 import type { Sample, User } from "@/types";
 import apiClient from "@/api-client";
 
@@ -15,12 +15,10 @@ apiClient.get("allusers").then((response) => {
   console.log(response);
   users.value = response.data.users;
 });
-
 </script>
 
 <template>
   <main>
-    <p>(Normally this page would only be accessible to admin users)</p>
     <Item>
       <template #icon>
         <i class="bi-gear"></i>
@@ -47,18 +45,19 @@ apiClient.get("allusers").then((response) => {
         <i class="bi-gear"></i>
       </template>
       <template #heading>Users</template>
-      <p>(Normally this page only be accessible to admin users)</p>
       <p>{{ users.length }} registered users:</p>
       <table>
         <tr>
           <th>Id</th>
           <th>Email</th>
           <th>Activated</th>
+          <th>Admin</th>
         </tr>
         <tr v-for="user in users" :key="user.id">
           <td>{{ user["id"] }}</td>
           <td>{{ user["email"] }}</td>
           <td>{{ user["activated"] }}</td>
+          <td>{{ user["is_admin"] }}</td>
         </tr>
       </table>
     </Item>

@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import Item from "@/components/ListItem.vue";
-import {ref} from "vue";
+import { ref } from "vue";
 import apiClient from "@/api-client";
 const remaining = ref(0);
 apiClient.get("remaining").then((response) => {
   console.log(response);
   remaining.value = response.data.remaining;
 });
-
 </script>
 
 <template>
@@ -24,9 +23,7 @@ apiClient.get("remaining").then((response) => {
       <ul>
         <li>Samples must be submitted by Wednesday each week.</li>
         <li>Results will be available on Friday.</li>
-        <li>
-          Remaining available samples this week: {{ remaining }}.
-        </li>
+        <li>Remaining available samples this week: {{ remaining }}.</li>
       </ul>
     </Item>
     <Item>

@@ -68,6 +68,17 @@ class User(db.Model):
             db.session.commit()
         return True
 
+    def as_dict(self, include_password_hash: bool = False):
+        user_as_dict = {
+            "id": self.id,
+            "email": self.email,
+            "activated": self.activated,
+            "is_admin": self.is_admin,
+        }
+        if include_password_hash:
+            user_as_dict["password_hash"] = self.password_hash
+        return user_as_dict
+
 
 def add_new_user(email: str, password: str, is_admin: bool = False) -> bool:
     # todo: active should be false until they click on emailed activation link
@@ -132,7 +143,7 @@ def login():
         return jsonify("Incorrect password"), 401
     logger.info(f"  -> returning JWT access token")
     access_token = create_access_token(identity=user)
-    return jsonify(access_token=access_token)
+    return jsonify(user=current_user.as_dist(), access_token=access_token)
 
 
 @app.route("/signup", methods=["POST"])
@@ -151,14 +162,6 @@ def signup():
 def remaining():
     # todo: calculate this properly: correct max number, filter samples for this week
     return jsonify(remaining=96 - len(db.session.execute(db.select(Sample)).all()))
-
-
-@app.route("/whoami", methods=["GET"])
-@jwt_required()
-def whoami():
-    print(current_user, flush=True)
-    # We can now access our sqlalchemy User object via `current_user`.
-    return jsonify(id=current_user.id, email=current_user.email)
 
 
 @app.route("/samples", methods=["GET"])
@@ -187,12 +190,7 @@ def all_samples():
 def all_users():
     if current_user.is_admin:
         users = db.session.execute(db.select(User)).scalars().all()
-        return jsonify(
-            users=[
-                {"id": user.id, "email": user.email, "activated": user.activated}
-                for user in users
-            ]
-        )
+        return jsonify(users=[user.as_dict() for user in users])
     return jsonify("Admin account required"), 401
 
 
