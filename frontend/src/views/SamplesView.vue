@@ -1,9 +1,27 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import Item from "@/components/ListItem.vue";
-import apiClient from "@/api-client";
+import { apiClient, download_reference_sequence } from "@/api-client";
 import type { Sample } from "@/types";
 const new_sample_name = ref("");
+const selected_file = ref(null as null | Blob);
+
+function on_file_changed(event: Event) {
+  const target = event.target as HTMLInputElement;
+  if (target != null && target.files != null) {
+    selected_file.value = target.files[0];
+  } else {
+    selected_file.value = null;
+  }
+  if (
+    selected_file.value != null &&
+    selected_file.value.size > 1024 * 1024 * 4
+  ) {
+    window.alert(
+      "File is too large: maximum reference sequence file size is 4MB"
+    );
+  }
+}
 
 function validate_sample_name(sample_name: string) {
   // only alphanumeric characters or underscores
@@ -33,15 +51,22 @@ apiClient
   });
 
 function add_sample() {
+  let formData = new FormData();
+  formData.append("name", new_sample_name.value);
+  if (selected_file.value !== null) {
+    formData.append("file", selected_file.value);
+  }
   apiClient
-    .post("addsample", {
-      name: new_sample_name.value,
+    .post("addsample", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
     })
     .then((response) => {
-      console.log(response);
       samples.value.push(response.data.sample);
     });
   new_sample_name.value = "";
+  selected_file.value = null;
 }
 </script>
 
@@ -58,10 +83,24 @@ function add_sample() {
           <tr>
             <th>Primary Key</th>
             <th>Sample Name</th>
+            <th>Reference Sequence</th>
           </tr>
           <tr v-for="sample in samples" :key="sample.id">
             <td>{{ sample["primary_key"] }}</td>
             <td>{{ sample["name"] }}</td>
+            <td>
+              <template v-if="sample['reference_sequence_description']">
+                <a
+                  href=""
+                  @click.prevent="
+                    download_reference_sequence(sample['primary_key'])
+                  "
+                >
+                  {{ sample["reference_sequence_description"] }}
+                </a>
+              </template>
+              <template v-else> - </template>
+            </td>
           </tr>
         </table>
       </template>
@@ -74,13 +113,26 @@ function add_sample() {
         <i class="bi-clipboard-plus"></i>
       </template>
       <template #heading>Submit a sample</template>
-      <p>To submit a new sample, enter a sample name:</p>
       <p>
+        To submit a new sample, enter a sample name, and optionally upload a
+        fasta file containing a reference sequence:
+      </p>
+      <p>
+        Sample name:
         <input
           v-model="new_sample_name"
           placeholder="pXYZ_ABC_c1"
           maxlength="128"
           :title="new_sample_name_message"
+        />
+      </p>
+      <p>
+        Reference sequence (optional):
+        <input
+          type="file"
+          name="file"
+          @change="on_file_changed($event)"
+          title="Optionally upload a fasta file reference sequence"
         />
       </p>
       <p>

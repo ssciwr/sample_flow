@@ -2,7 +2,7 @@
 import Item from "@/components/ListItem.vue";
 import { ref, computed } from "vue";
 import { useUserStore } from "@/stores/user";
-import apiClient from "@/api-client";
+import { apiClient } from "@/api-client";
 
 const userStore = useUserStore();
 
