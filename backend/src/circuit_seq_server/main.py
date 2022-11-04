@@ -5,6 +5,7 @@ import argon2
 import click
 import tempfile
 import pathlib
+import datetime
 
 import flask
 from flask import Flask
@@ -24,13 +25,16 @@ from Bio import SeqIO
 
 from circuit_seq_server.logger import get_logger
 from circuit_seq_server.primary_key import get_primary_key
+from circuit_seq_server.date_utils import get_start_of_week
 
 app = Flask("CircuitSeqServer")
+
+circuit_seq_data_path = "/circuit_seq_data"
 
 app.config["JWT_SECRET_KEY"] = secrets.token_urlsafe(64)
 app.config[
     "SQLALCHEMY_DATABASE_URI"
-] = "sqlite:///CircuitSeq.db"  # todo: persist to disk
+] = f"sqlite:///{circuit_seq_data_path}/CircuitSeq.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["MAX_CONTENT_LENGTH"] = 64 * 1000 * 1000  # 64mb max file upload
 
@@ -41,6 +45,10 @@ db = SQLAlchemy(app)
 ph = argon2.PasswordHasher()
 logger = get_logger("CircuitSeqServer")
 
+# todo: put these in db? have them modifiable by an admin user (to take effect the following week)?
+plate_n_rows = 8
+plate_n_cols = 12
+
 
 @dataclass
 class Sample(db.Model):
@@ -48,7 +56,18 @@ class Sample(db.Model):
     email: str = db.Column(db.String(256), nullable=False)
     primary_key: str = db.Column(db.String(32), nullable=False, unique=True)
     name: str = db.Column(db.String(128), nullable=False)
-    reference_sequence_description: str = db.Column(db.String(256), nullable=True)
+    reference_sequence_description: Optional[str] = db.Column(
+        db.String(256), nullable=True
+    )
+    date: datetime.date = db.Column(db.Date, nullable=False)
+
+
+def count_samples_this_week(current_date: Optional[datetime.date] = None) -> int:
+    return len(
+        db.session.execute(
+            db.select(Sample).filter(Sample.date >= get_start_of_week(current_date))
+        ).all()
+    )
 
 
 @dataclass
@@ -105,18 +124,26 @@ def add_new_user(email: str, password: str, is_admin: bool = False) -> bool:
 def add_new_sample(
     email: str, name: str, reference_sequence_file: Optional[Any]
 ) -> Optional[Sample]:
-    count = len(
-        db.session.execute(db.select(Sample)).all()
-    )  # todo: filter only samples from current week
-    week = 1  # todo: calculate week number based on date
-    key = get_primary_key(week, count)
+    today = datetime.date.today()
+    year, week, day = today.isocalendar()
+    count = count_samples_this_week(today)
+    key = get_primary_key(
+        year=year,
+        week=week,
+        current_count=count,
+        n_rows=plate_n_rows,
+        n_cols=plate_n_cols,
+    )
     if key is None:
         return None
     reference_sequence_description: Optional[str] = None
+    pathlib.Path(f"{circuit_seq_data_path}/{year}/{week}/reference").mkdir(
+        parents=True, exist_ok=True
+    )
     if reference_sequence_file is not None:
-        filename = f"{key}_{name}.fasta"
+        filename = f"{circuit_seq_data_path}/{year}/{week}/reference/{key}_{name}.fasta"
         with tempfile.TemporaryDirectory() as tmp_dir:
-            temp_file = pathlib.Path(tmp_dir) / filename
+            temp_file = pathlib.Path(tmp_dir) / "temp.fasta"
             logger.info(
                 f"Saving {reference_sequence_file} to temporary file {temp_file}"
             )
@@ -138,6 +165,7 @@ def add_new_sample(
         name=name,
         primary_key=key,
         reference_sequence_description=reference_sequence_description,
+        date=today,
     )
     db.session.add(new_sample)
     db.session.commit()
@@ -155,7 +183,7 @@ def user_identity_lookup(user):
 def user_lookup_callback(_jwt_header, jwt_data):
     identity = jwt_data["sub"]
     return db.session.execute(
-        db.select(User).filter_by(id=identity)
+        db.select(User).filter(User.id == identity)
     ).scalar_one_or_none()
 
 
@@ -165,7 +193,7 @@ def login():
     password = request.json.get("password", None)
     logger.info(f"Login request from {email}")
     user = db.session.execute(
-        db.select(User).filter_by(email=email)
+        db.select(User).filter(User.email == email)
     ).scalar_one_or_none()
     if not user:
         logger.info(f"  -> user not found")
@@ -195,19 +223,34 @@ def signup():
 
 @app.route("/remaining", methods=["GET"])
 def remaining():
-    # todo: calculate this properly: correct max number, filter samples for this week
-    return jsonify(remaining=96 - len(db.session.execute(db.select(Sample)).all()))
+    return jsonify(remaining=plate_n_rows * plate_n_cols - count_samples_this_week())
 
 
 @app.route("/samples", methods=["GET"])
 @jwt_required()
 def samples():
-    user_samples = (
-        db.session.execute(db.select(Sample).filter_by(email=current_user.email))
+    start_of_week = get_start_of_week()
+    current_samples = (
+        db.session.execute(
+            db.select(Sample)
+            .filter(Sample.email == current_user.email)
+            .filter(Sample.date >= start_of_week)
+            .order_by(db.desc("date"))
+        )
         .scalars()
         .all()
     )
-    return jsonify(samples=user_samples)
+    previous_samples = (
+        db.session.execute(
+            db.select(Sample)
+            .filter(Sample.email == current_user.email)
+            .filter(Sample.date < start_of_week)
+            .order_by(db.desc("date"))
+        )
+        .scalars()
+        .all()
+    )
+    return jsonify(current_samples=current_samples, previous_samples=previous_samples)
 
 
 @app.route("/reference_sequence", methods=["POST"])
@@ -219,7 +262,7 @@ def reference_sequence():
     )
     filters = {"primary_key": primary_key}
     if not current_user.is_admin:
-        filters["email"]=current_user.email
+        filters["email"] = current_user.email
     user_sample = db.session.execute(
         db.select(Sample).filter_by(**filters)
     ).scalar_one_or_none()
@@ -234,7 +277,9 @@ def reference_sequence():
     logger.info(
         f"  -> found reference sequence with description {user_sample.reference_sequence_description}"
     )
-    file = pathlib.Path(f"{user_sample.primary_key}_{user_sample.name}.fasta")
+    year, week, day = user_sample.date.isocalendar()
+    filename = f"{circuit_seq_data_path}/{year}/{week}/reference/{user_sample.primary_key}_{user_sample.name}.fasta"
+    file = pathlib.Path(filename)
     if not file.is_file():
         logger.info(f"  -> fasta file {file} not found")
         return jsonify("Fasta file not found"), 401
@@ -245,10 +290,29 @@ def reference_sequence():
 @app.route("/allsamples", methods=["GET"])
 @jwt_required()
 def all_samples():
-    if current_user.is_admin:
-        all_user_samples = db.session.execute(db.select(Sample)).scalars().all()
-        return jsonify(samples=all_user_samples)
-    return jsonify("Admin account required"), 401
+    if not current_user.is_admin:
+        return jsonify("Admin account required"), 401
+    year, week, day = datetime.date.today().isocalendar()
+    start_of_week = datetime.date.fromisocalendar(year, week, 1)
+    current_samples = (
+        db.session.execute(
+            db.select(Sample)
+            .filter(Sample.date >= start_of_week)
+            .order_by(db.desc("date"))
+        )
+        .scalars()
+        .all()
+    )
+    previous_samples = (
+        db.session.execute(
+            db.select(Sample)
+            .filter(Sample.date < start_of_week)
+            .order_by(db.desc("date"))
+        )
+        .scalars()
+        .all()
+    )
+    return jsonify(current_samples=current_samples, previous_samples=previous_samples)
 
 
 @app.route("/allusers", methods=["GET"])
@@ -279,9 +343,28 @@ def _add_temporary_users_for_testing():
     for (name, is_admin) in [("admin", True), ("user", False)]:
         email = f"{name}@embl.de"
         if not db.session.execute(
-            db.select(User).filter_by(email=email)
+            db.select(User).filter(User.email == email)
         ).scalar_one_or_none():
             add_new_user(email, name, is_admin)
+
+
+def _add_temporary_samples_for_testing():
+    # add temporary samples if not already in db
+    for week in [43, 42, 40]:
+        for n in [1, 2, 3]:
+            key = f"22_{week}_A{n}"
+            if not db.session.execute(
+                db.select(Sample).filter(Sample.primary_key == key)
+            ).scalar_one_or_none():
+                new_sample = Sample(
+                    email="user@embl.de",
+                    name=f"builtin_test_sample{n}",
+                    primary_key=key,
+                    reference_sequence_description=None,
+                    date=datetime.date.fromisocalendar(2022, week, n),
+                )
+                db.session.add(new_sample)
+                db.session.commit()
 
 
 @click.command()
@@ -291,6 +374,7 @@ def main(host: str, port: int):
     with app.app_context():
         db.create_all()
         _add_temporary_users_for_testing()
+        _add_temporary_samples_for_testing()
 
     app.run(host=host, port=port)
 
