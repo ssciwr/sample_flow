@@ -23,21 +23,23 @@ function on_file_changed(event: Event) {
   }
 }
 
-function validate_sample_name(sample_name: string) {
+function duplicate_sample_name(sample_name: string) {
+  return current_samples.value.some((e) => e.name === sample_name);
+}
+
+function invalid_sample_name(sample_name: string) {
   // only alphanumeric characters or underscores
   const re = /^([A-Za-z0-9_]+)$/;
-  const valid = re.test(sample_name);
-  const already_used = current_samples.value.some(
-    (e) => e.name === sample_name
-  );
-  return valid && !already_used;
+  return !re.test(sample_name);
 }
 
 const new_sample_name_message = computed(() => {
-  if (validate_sample_name(new_sample_name.value)) {
-    return "";
+  if (duplicate_sample_name(new_sample_name.value)) {
+    return "Sample name already used";
+  } else if (invalid_sample_name(new_sample_name.value)) {
+    return "Only alphanumeric characters and underscores allowed";
   } else {
-    return "Sample names need to be unique, and contain only alphanumeric characters and underscores";
+    return "";
   }
 });
 
@@ -83,7 +85,7 @@ function add_sample() {
       <template #heading>My samples</template>
       <template v-if="current_samples.length > 0">
         <p>Your samples for this week:</p>
-        <table>
+        <table class="zebra">
           <tr>
             <th>Primary Key</th>
             <th>Sample Name</th>
@@ -121,33 +123,47 @@ function add_sample() {
         To submit a new sample, enter a sample name, and optionally upload a
         fasta file containing a reference sequence:
       </p>
-      <p>
-        Sample name:
-        <input
-          v-model="new_sample_name"
-          placeholder="pXYZ_ABC_c1"
-          maxlength="128"
-          :title="new_sample_name_message"
-        />
-      </p>
-      <p>
-        Reference sequence (optional):
-        <input
-          type="file"
-          name="file"
-          @change="on_file_changed($event)"
-          title="Optionally upload a fasta file reference sequence"
-        />
-      </p>
-      <p>
-        <button
-          @click="add_sample"
-          :disabled="new_sample_name_message.length > 0"
-          :title="new_sample_name_message"
-        >
-          Request Sample
-        </button>
-      </p>
+      <table>
+        <tr>
+          <td style="text-align: right">Sample name:</td>
+          <td>
+            <input
+              v-model="new_sample_name"
+              placeholder="pXYZ_ABC_c1"
+              maxlength="128"
+              :title="new_sample_name_message"
+            />
+          </td>
+          <td style="font-style: italic">
+            <template v-if="new_sample_name">
+              {{ new_sample_name_message }}
+            </template>
+          </td>
+        </tr>
+        <tr>
+          <td style="text-align: right">Reference sequence (optional):</td>
+          <td>
+            <input
+              type="file"
+              name="file"
+              @change="on_file_changed($event)"
+              title="Optionally upload a fasta file reference sequence"
+            />
+          </td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>
+            <button
+              @click="add_sample"
+              :disabled="new_sample_name_message.length > 0"
+              :title="new_sample_name_message"
+            >
+              Request Sample
+            </button>
+          </td>
+        </tr>
+      </table>
     </Item>
     <Item>
       <template #icon>
@@ -156,7 +172,7 @@ function add_sample() {
       <template #heading>Results</template>
       <template v-if="previous_samples.length > 0">
         <p>Results from your previous samples:</p>
-        <table>
+        <table class="zebra">
           <tr>
             <th>Date</th>
             <th>Primary Key</th>
