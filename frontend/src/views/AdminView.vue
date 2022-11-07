@@ -33,7 +33,7 @@ apiClient.get("allusers").then((response) => {
       </template>
       <template #heading>Samples this week</template>
       <p>{{ current_samples.length }} samples have been requested so far:</p>
-      <table>
+      <table class="zebra">
         <tr>
           <th>Date</th>
           <th>Primary Key</th>
@@ -67,7 +67,7 @@ apiClient.get("allusers").then((response) => {
         <i class="bi-gear"></i>
       </template>
       <template #heading>Previous samples</template>
-      <table>
+      <table class="zebra">
         <tr>
           <th>Date</th>
           <th>Primary Key</th>
@@ -102,7 +102,7 @@ apiClient.get("allusers").then((response) => {
       </template>
       <template #heading>Users</template>
       <p>{{ users.length }} registered users:</p>
-      <table>
+      <table class="zebra">
         <tr>
           <th>Id</th>
           <th>Email</th>

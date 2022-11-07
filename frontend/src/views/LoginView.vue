@@ -34,7 +34,7 @@ const signup_password_message = computed(() => {
   if (validate_password(signup_password.value)) {
     return "";
   } else {
-    return "Password needs at least 8 chars, including lower-case, upper-case and a number.";
+    return "At least 8 characters, including lower-case, upper-case and a number.";
   }
 });
 
@@ -99,21 +99,30 @@ function do_signup() {
       </template>
       <template v-else>
         <p>Log in with the email address and password you used to sign up:</p>
-        <p>
-          Email:
-          <input
-            v-model="login_email_address"
-            placeholder="your.name@uni-heidelberg.de"
-          />
-        </p>
-        <p>
-          Password:
-          <input v-model="login_password" type="password" />
-        </p>
-        <p>{{ login_error_message }}</p>
-        <p>
-          <button @click="do_login">Login</button>
-        </p>
+        <table>
+          <tr>
+            <td style="text-align: right">Email:</td>
+            <td>
+              <input
+                v-model="login_email_address"
+                placeholder="your.name@uni-heidelberg.de"
+              />
+            </td>
+          </tr>
+          <tr>
+            <td style="text-align: right">Password:</td>
+            <td>
+              <input v-model="login_password" type="password" />
+            </td>
+            <td>{{ login_error_message }}</td>
+          </tr>
+          <tr>
+            <td></td>
+            <td>
+              <button @click="do_login">Login</button>
+            </td>
+          </tr>
+        </table>
       </template>
     </Item>
     <Item v-if="userStore.user === null">
@@ -125,37 +134,52 @@ function do_signup() {
         If you don't yet have an account, you can create one by entering your
         Heidelberg Uni, EMBL or DKFZ email address and choosing a password:
       </p>
-      <p>
-        Email:
-        <input
-          v-model="signup_email_address"
-          placeholder="your.name@uni-heidelberg.de"
-          :title="signup_email_address_message"
-        />
-      </p>
-      <p>
-        Password:
-        <input
-          v-model="signup_password"
-          type="password"
-          placeholder="password"
-          :title="signup_password_message"
-        />
-      </p>
-      <p>{{ signup_response_message }}</p>
-      <p>
-        <button
-          @click="do_signup"
-          :title="signup_email_address_message + ' ' + signup_password_message"
-          :disabled="
-            signup_email_address_message.length +
-              signup_password_message.length >
-            0
-          "
-        >
-          Sign up
-        </button>
-      </p>
+      <table>
+        <tr>
+          <td style="text-align: right">Email:</td>
+          <td>
+            <input
+              v-model="signup_email_address"
+              placeholder="your.name@uni-heidelberg.de"
+              :title="signup_email_address_message"
+            />
+          </td>
+          <td style="font-style: italic">{{ signup_email_address_message }}</td>
+        </tr>
+        <tr>
+          <td style="text-align: right">Password:</td>
+          <td>
+            <input
+              v-model="signup_password"
+              type="password"
+              placeholder="password"
+              :title="signup_password_message"
+            />
+          </td>
+          <td style="font-style: italic">{{ signup_password_message }}</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>
+            <button
+              @click="do_signup"
+              :title="
+                signup_email_address_message + ' ' + signup_password_message
+              "
+              :disabled="
+                signup_email_address_message.length +
+                  signup_password_message.length >
+                0
+              "
+            >
+              Sign up
+            </button>
+          </td>
+        </tr>
+        <tr>
+          <td>{{ signup_response_message }}</td>
+        </tr>
+      </table>
     </Item>
   </main>
 </template>

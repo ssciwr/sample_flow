@@ -43,9 +43,9 @@ th {
   font-weight: bold;
   text-align: center;
 }
-tr:nth-of-type(odd) {
+.zebra tr:nth-of-type(odd) {
   background-color: #fff;
 }
-tr:nth-of-type(even) {
+.zebra tr:nth-of-type(even) {
   background-color: #7132bd19;
 }
