@@ -5,7 +5,7 @@ export type Sample = {
   name: string;
   email: string;
   reference_sequence_description: string | null;
-  // date: Date;
+  date: string;
 };
 
 export type User = {

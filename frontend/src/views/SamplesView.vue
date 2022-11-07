@@ -27,7 +27,9 @@ function validate_sample_name(sample_name: string) {
   // only alphanumeric characters or underscores
   const re = /^([A-Za-z0-9_]+)$/;
   const valid = re.test(sample_name);
-  const already_used = samples.value.some((e) => e.name === sample_name);
+  const already_used = current_samples.value.some(
+    (e) => e.name === sample_name
+  );
   return valid && !already_used;
 }
 
@@ -39,12 +41,15 @@ const new_sample_name_message = computed(() => {
   }
 });
 
-const samples = ref([] as Sample[]);
+const current_samples = ref([] as Sample[]);
+const previous_samples = ref([] as Sample[]);
 
 apiClient
   .get("samples")
   .then((response) => {
-    samples.value = response.data.samples;
+    console.log(response.data);
+    current_samples.value = response.data.current_samples;
+    previous_samples.value = response.data.previous_samples;
   })
   .catch((error) => {
     console.log(error);
@@ -63,13 +68,12 @@ function add_sample() {
       },
     })
     .then((response) => {
-      samples.value.push(response.data.sample);
+      current_samples.value.push(response.data.sample);
     });
   new_sample_name.value = "";
   selected_file.value = null;
 }
 </script>
-
 <template>
   <main>
     <Item>
@@ -77,7 +81,7 @@ function add_sample() {
         <i class="bi-clipboard-data"></i>
       </template>
       <template #heading>My samples</template>
-      <template v-if="samples.length > 0">
+      <template v-if="current_samples.length > 0">
         <p>Your samples for this week:</p>
         <table>
           <tr>
@@ -85,7 +89,7 @@ function add_sample() {
             <th>Sample Name</th>
             <th>Reference Sequence</th>
           </tr>
-          <tr v-for="sample in samples" :key="sample.id">
+          <tr v-for="sample in current_samples" :key="sample.id">
             <td>{{ sample["primary_key"] }}</td>
             <td>{{ sample["name"] }}</td>
             <td>
@@ -144,6 +148,44 @@ function add_sample() {
           Request Sample
         </button>
       </p>
+    </Item>
+    <Item>
+      <template #icon>
+        <i class="bi-clipboard-data"></i>
+      </template>
+      <template #heading>Results</template>
+      <template v-if="previous_samples.length > 0">
+        <p>Results from your previous samples:</p>
+        <table>
+          <tr>
+            <th>Date</th>
+            <th>Primary Key</th>
+            <th>Sample Name</th>
+            <th>Reference Sequence</th>
+          </tr>
+          <tr v-for="sample in previous_samples" :key="sample.id">
+            <td>{{ new Date(sample["date"]).toLocaleDateString("en-CA") }}</td>
+            <td>{{ sample["primary_key"] }}</td>
+            <td>{{ sample["name"] }}</td>
+            <td>
+              <template v-if="sample['reference_sequence_description']">
+                <a
+                  href=""
+                  @click.prevent="
+                    download_reference_sequence(sample['primary_key'])
+                  "
+                >
+                  {{ sample["reference_sequence_description"] }}
+                </a>
+              </template>
+              <template v-else> - </template>
+            </td>
+          </tr>
+        </table>
+      </template>
+      <template v-else>
+        <p>No previous samples.</p>
+      </template>
     </Item>
   </main>
 </template>

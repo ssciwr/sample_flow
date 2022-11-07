@@ -4,11 +4,19 @@ import { ref } from "vue";
 import type { Sample, User } from "@/types";
 import { apiClient, download_reference_sequence } from "@/api-client";
 
-const samples = ref([] as Sample[]);
-apiClient.get("allsamples").then((response) => {
-  console.log(response);
-  samples.value = response.data.samples;
-});
+const current_samples = ref([] as Sample[]);
+const previous_samples = ref([] as Sample[]);
+
+apiClient
+  .get("allsamples")
+  .then((response) => {
+    console.log(response.data);
+    current_samples.value = response.data.current_samples;
+    previous_samples.value = response.data.previous_samples;
+  })
+  .catch((error) => {
+    console.log(error);
+  });
 
 const users = ref([] as User[]);
 apiClient.get("allusers").then((response) => {
@@ -23,16 +31,52 @@ apiClient.get("allusers").then((response) => {
       <template #icon>
         <i class="bi-gear"></i>
       </template>
-      <template #heading>Samples</template>
-      <p>{{ samples.length }} samples have been requested so far:</p>
+      <template #heading>Samples this week</template>
+      <p>{{ current_samples.length }} samples have been requested so far:</p>
       <table>
         <tr>
+          <th>Date</th>
           <th>Primary Key</th>
           <th>Email</th>
           <th>Sample Name</th>
           <th>Reference Sequence</th>
         </tr>
-        <tr v-for="sample in samples" :key="sample.id">
+        <tr v-for="sample in current_samples" :key="sample.id">
+          <td>{{ new Date(sample["date"]).toLocaleDateString("en-CA") }}</td>
+          <td>{{ sample["primary_key"] }}</td>
+          <td>{{ sample["email"] }}</td>
+          <td>{{ sample["name"] }}</td>
+          <td>
+            <template v-if="sample['reference_sequence_description']">
+              <a
+                href=""
+                @click.prevent="
+                  download_reference_sequence(sample['primary_key'])
+                "
+              >
+                {{ sample["reference_sequence_description"] }}
+              </a>
+            </template>
+            <template v-else> - </template>
+          </td>
+        </tr>
+      </table>
+    </Item>
+    <Item>
+      <template #icon>
+        <i class="bi-gear"></i>
+      </template>
+      <template #heading>Previous samples</template>
+      <table>
+        <tr>
+          <th>Date</th>
+          <th>Primary Key</th>
+          <th>Email</th>
+          <th>Sample Name</th>
+          <th>Reference Sequence</th>
+        </tr>
+        <tr v-for="sample in previous_samples" :key="sample.id">
+          <td>{{ new Date(sample["date"]).toLocaleDateString("en-CA") }}</td>
           <td>{{ sample["primary_key"] }}</td>
           <td>{{ sample["email"] }}</td>
           <td>{{ sample["name"] }}</td>
