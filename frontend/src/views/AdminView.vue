@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import Item from "@/components/ListItem.vue";
-import { ref } from "vue";
-import type { Sample, User } from "@/types";
+import { ref, computed } from "vue";
+import type { Sample, User, Settings } from "@/types";
 import { apiClient, download_reference_sequence } from "@/api-client";
 
 const current_samples = ref([] as Sample[]);
 const previous_samples = ref([] as Sample[]);
 
 apiClient
-  .get("allsamples")
+  .get("admin/allsamples")
   .then((response) => {
     console.log(response.data);
     current_samples.value = response.data.current_samples;
@@ -19,10 +19,48 @@ apiClient
   });
 
 const users = ref([] as User[]);
-apiClient.get("allusers").then((response) => {
+apiClient.get("admin/allusers").then((response) => {
   console.log(response);
   users.value = response.data.users;
 });
+
+const settings = ref({} as Settings);
+apiClient.get("admin/settings").then((response) => {
+  console.log(response);
+  settings.value = response.data;
+  console.log(settings.value);
+});
+
+function update_n_rows(event: Event) {
+  const target = event.target as HTMLInputElement;
+  if (target != null) {
+    settings.value.plate_n_rows = Number(target.value);
+  }
+}
+
+function update_n_cols(event: Event) {
+  const target = event.target as HTMLInputElement;
+  if (target != null) {
+    settings.value.plate_n_cols = Number(target.value);
+  }
+}
+
+const plate_range_string = computed(() => {
+  return `A1 ... ${String.fromCharCode(settings.value.plate_n_rows + 64)}${
+    settings.value.plate_n_cols
+  }`;
+});
+
+function save_settings() {
+  apiClient
+    .post("admin/settings", settings.value)
+    .then((response) => {
+      console.log(`Settings updated: ${response.data}`);
+    })
+    .catch((error) => {
+      console.log(`Settings update failed`);
+    });
+}
 </script>
 
 <template>
@@ -58,6 +96,46 @@ apiClient.get("allusers").then((response) => {
               </a>
             </template>
             <template v-else> - </template>
+          </td>
+        </tr>
+      </table>
+    </Item>
+    <Item>
+      <template #icon>
+        <i class="bi-gear"></i>
+      </template>
+      <template #heading>Settings</template>
+      <table>
+        <tr>
+          <td>Plate num rows:</td>
+          <td>
+            <input
+              type="number"
+              min="1"
+              :value="settings.plate_n_rows"
+              @change="update_n_rows"
+            />
+          </td>
+        </tr>
+        <tr>
+          <td>Plate num cols:</td>
+          <td>
+            <input
+              type="number"
+              min="1"
+              :value="settings.plate_n_cols"
+              @change="update_n_cols"
+            />
+          </td>
+        </tr>
+        <tr>
+          <td>Plate indices:</td>
+          <td>{{ plate_range_string }}</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>
+            <button @click="save_settings">Save Settings</button>
           </td>
         </tr>
       </table>
