@@ -2,6 +2,42 @@ import circuit_seq_server.model as model
 import datetime
 
 
+def _count_settings() -> int:
+    return len(
+        model.db.session.execute(model.db.select(model.Settings)).scalars().all()
+    )
+
+
+def test_settings(app, tmp_path):
+    with app.app_context():
+        assert _count_settings() == 0
+        settings = model.get_current_settings()
+        assert _count_settings() == 1
+        assert settings["plate_n_rows"] == 8
+        assert settings["plate_n_cols"] == 12
+        settings["plate_n_rows"] = 14
+        settings["plate_n_cols"] = 18
+        email = "test@test.com"
+        assert model.set_current_settings(email, settings) is True
+        assert _count_settings() == 2
+        new_settings = model.get_current_settings()
+        assert new_settings["plate_n_rows"] == 14
+        assert new_settings["plate_n_cols"] == 18
+        # settings dict missing required fields is a no-op
+        assert model.set_current_settings(email, {"plate_n_rows": 10}) is False
+        assert _count_settings() == 2
+        assert new_settings["plate_n_rows"] == 14
+        assert new_settings["plate_n_cols"] == 18
+        assert (
+            model.set_current_settings(email, {"plate_n_rows": 10, "plate_n_cols": 2})
+            is True
+        )
+        assert _count_settings() == 3
+        new_settings = model.get_current_settings()
+        assert new_settings["plate_n_rows"] == 10
+        assert new_settings["plate_n_cols"] == 2
+
+
 def test_add_new_sample(app, tmp_path):
     with app.app_context():
         year, week, day = datetime.date.today().isocalendar()

@@ -20,8 +20,8 @@ from circuit_seq_server.model import (
     add_new_user,
     add_new_sample,
     count_samples_this_week,
-    plate_n_cols,
-    plate_n_rows,
+    get_current_settings,
+    set_current_settings,
     _add_temporary_users_for_testing,
     _add_temporary_samples_for_testing,
 )
@@ -87,8 +87,10 @@ def create_app(data_path: str = "/circuit_seq_data"):
 
     @app.route("/remaining", methods=["GET"])
     def remaining():
+        settings = get_current_settings()
         return jsonify(
-            remaining=plate_n_rows * plate_n_cols - count_samples_this_week()
+            remaining=settings["plate_n_rows"] * settings["plate_n_cols"]
+            - count_samples_this_week()
         )
 
     @app.route("/samples", methods=["GET"])
@@ -152,9 +154,35 @@ def create_app(data_path: str = "/circuit_seq_data"):
         logger.info(f"Returning fasta file {file}")
         return flask.send_file(file, as_attachment=True)
 
-    @app.route("/allsamples", methods=["GET"])
+    @app.route("/addsample", methods=["POST"])
     @jwt_required()
-    def all_samples():
+    def add_sample():
+        email = current_user.email
+        name = request.form.to_dict().get("name", "")
+        reference_sequence_file = request.files.to_dict().get("file", None)
+        logger.info(f"Adding sample {name} from {email}")
+        new_sample = add_new_sample(email, name, reference_sequence_file, data_path)
+        if new_sample is not None:
+            logger.info(f"  - > success")
+            return jsonify(sample=new_sample)
+        return jsonify(message="No more samples available this week."), 401
+
+    @app.route("/admin/settings", methods=["GET", "POST"])
+    @jwt_required()
+    def admin_settings():
+        if not current_user.is_admin:
+            return jsonify("Admin account required"), 401
+        if flask.request.method == "POST":
+            if set_current_settings(current_user.email, request.json):
+                return jsonify(message="Settings updated.")
+            else:
+                jsonify(message="Failed to update settings"), 401
+        else:
+            return get_current_settings()
+
+    @app.route("/admin/allsamples", methods=["GET"])
+    @jwt_required()
+    def admin_all_samples():
         if not current_user.is_admin:
             return jsonify("Admin account required"), 401
         year, week, day = datetime.date.today().isocalendar()
@@ -181,26 +209,13 @@ def create_app(data_path: str = "/circuit_seq_data"):
             current_samples=current_samples, previous_samples=previous_samples
         )
 
-    @app.route("/allusers", methods=["GET"])
+    @app.route("/admin/allusers", methods=["GET"])
     @jwt_required()
-    def all_users():
+    def admin_all_users():
         if current_user.is_admin:
             users = db.session.execute(db.select(User)).scalars().all()
             return jsonify(users=[user.as_dict() for user in users])
         return jsonify("Admin account required"), 401
-
-    @app.route("/addsample", methods=["POST"])
-    @jwt_required()
-    def add_sample():
-        email = current_user.email
-        name = request.form.to_dict().get("name", "")
-        reference_sequence_file = request.files.to_dict().get("file", None)
-        logger.info(f"Adding sample {name} from {email}")
-        new_sample = add_new_sample(email, name, reference_sequence_file, data_path)
-        if new_sample is not None:
-            logger.info(f"  - > success")
-            return jsonify(sample=new_sample)
-        return jsonify(message="No more samples available this week."), 401
 
     with app.app_context():
         db.create_all()

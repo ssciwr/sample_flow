@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, Any
+from typing import Optional, Any, Dict
 import argon2
 import tempfile
 import pathlib
@@ -15,9 +15,46 @@ db = SQLAlchemy()
 ph = argon2.PasswordHasher()
 logger = get_logger("CircuitSeqServer")
 
-# todo: put these in db? have them modifiable by an admin user (to take effect the following week)?
-plate_n_rows = 8
-plate_n_cols = 12
+
+@dataclass
+class Settings(db.Model):
+    id: int = db.Column(db.Integer, primary_key=True)
+    datetime: datetime.datetime = db.Column(db.DateTime, nullable=False)
+    email: str = db.Column(db.String(256), nullable=False)
+    settings_dict: Dict = db.Column(db.PickleType, nullable=False)
+
+
+def default_settings_dict() -> Dict:
+    return {"plate_n_rows": 8, "plate_n_cols": 12}
+
+
+def get_current_settings() -> Dict:
+    settings_tuple = db.session.execute(
+        db.select(Settings).order_by(db.desc(Settings.id))
+    ).first()
+    if settings_tuple is not None:
+        return settings_tuple[0].settings_dict
+    # no settings in db: create default settings and add to db
+    settings = Settings(
+        datetime=datetime.datetime.today(),
+        email="default",
+        settings_dict=default_settings_dict(),
+    )
+    db.session.add(settings)
+    db.session.commit()
+    return settings.settings_dict
+
+
+def set_current_settings(email: str, settings_dict: Dict) -> bool:
+    for required_field in default_settings_dict():
+        if required_field not in settings_dict:
+            return False
+    settings = Settings(
+        datetime=datetime.datetime.today(), email=email, settings_dict=settings_dict
+    )
+    db.session.add(settings)
+    db.session.commit()
+    return True
 
 
 @dataclass
@@ -97,12 +134,13 @@ def add_new_sample(
     today = datetime.date.today()
     year, week, day = today.isocalendar()
     count = count_samples_this_week(today)
+    settings = get_current_settings()
     key = get_primary_key(
         year=year,
         week=week,
         current_count=count,
-        n_rows=plate_n_rows,
-        n_cols=plate_n_cols,
+        n_rows=settings["plate_n_rows"],
+        n_cols=settings["plate_n_cols"],
     )
     if key is None:
         return None

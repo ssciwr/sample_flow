@@ -14,3 +14,8 @@ export type User = {
   activated: boolean;
   is_admin: boolean;
 };
+
+export type Settings = {
+  plate_n_rows: number;
+  plate_n_cols: number;
+};
