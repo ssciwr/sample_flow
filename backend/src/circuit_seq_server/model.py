@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, Any, Dict
+from typing import Optional, Any, Dict, Tuple
 import argon2
 import tempfile
 import pathlib
@@ -45,16 +45,19 @@ def get_current_settings() -> Dict:
     return settings.settings_dict
 
 
-def set_current_settings(email: str, settings_dict: Dict) -> bool:
+def set_current_settings(email: str, settings_dict: Dict) -> Tuple[str, int]:
     for required_field in default_settings_dict():
         if required_field not in settings_dict:
-            return False
+            return (
+                f"Required field {required_field} missing - settings not updated",
+                401,
+            )
     settings = Settings(
         datetime=datetime.datetime.today(), email=email, settings_dict=settings_dict
     )
     db.session.add(settings)
     db.session.commit()
-    return True
+    return f"Settings updated by {settings.email} at {settings.datetime}", 200
 
 
 @dataclass

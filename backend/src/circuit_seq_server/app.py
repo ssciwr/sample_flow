@@ -173,10 +173,8 @@ def create_app(data_path: str = "/circuit_seq_data"):
         if not current_user.is_admin:
             return jsonify("Admin account required"), 401
         if flask.request.method == "POST":
-            if set_current_settings(current_user.email, request.json):
-                return jsonify(message="Settings updated.")
-            else:
-                jsonify(message="Failed to update settings"), 401
+            message, code = set_current_settings(current_user.email, request.json)
+            return jsonify(message=message), code
         else:
             return get_current_settings()
 

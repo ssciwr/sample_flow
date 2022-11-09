@@ -7,42 +7,30 @@ import { apiClient, download_reference_sequence } from "@/api-client";
 const current_samples = ref([] as Sample[]);
 const previous_samples = ref([] as Sample[]);
 
-apiClient
-  .get("admin/allsamples")
-  .then((response) => {
-    console.log(response.data);
-    current_samples.value = response.data.current_samples;
-    previous_samples.value = response.data.previous_samples;
-  })
-  .catch((error) => {
-    console.log(error);
-  });
+apiClient.get("admin/allsamples").then((response) => {
+  current_samples.value = response.data.current_samples;
+  previous_samples.value = response.data.previous_samples;
+});
 
 const users = ref([] as User[]);
 apiClient.get("admin/allusers").then((response) => {
-  console.log(response);
   users.value = response.data.users;
 });
 
 const settings = ref({} as Settings);
+const settings_message = ref("");
 apiClient.get("admin/settings").then((response) => {
-  console.log(response);
   settings.value = response.data;
-  console.log(settings.value);
 });
 
 function update_n_rows(event: Event) {
   const target = event.target as HTMLInputElement;
-  if (target != null) {
-    settings.value.plate_n_rows = Number(target.value);
-  }
+  settings.value.plate_n_rows = Number(target.value);
 }
 
 function update_n_cols(event: Event) {
   const target = event.target as HTMLInputElement;
-  if (target != null) {
-    settings.value.plate_n_cols = Number(target.value);
-  }
+  settings.value.plate_n_cols = Number(target.value);
 }
 
 const plate_range_string = computed(() => {
@@ -55,10 +43,10 @@ function save_settings() {
   apiClient
     .post("admin/settings", settings.value)
     .then((response) => {
-      console.log(`Settings updated: ${response.data}`);
+      settings_message.value = response.data.message;
     })
     .catch((error) => {
-      console.log(`Settings update failed`);
+      settings_message.value = error.response.data.message;
     });
 }
 </script>
@@ -139,6 +127,9 @@ function save_settings() {
           </td>
         </tr>
       </table>
+      <p style="font-style: italic">
+        {{ settings_message }}
+      </p>
     </Item>
     <Item>
       <template #icon>
