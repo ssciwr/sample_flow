@@ -15,27 +15,38 @@ apiClient.interceptors.request.use(function (config) {
   return config;
 });
 
-function download_reference_sequence(primary_key: string) {
+function download_file_from_endpoint(
+  endpoint: string,
+  json: object,
+  filename: string
+) {
   apiClient
-    .post(
-      "reference_sequence",
-      {
-        primary_key: primary_key,
+    .post(endpoint, json, {
+      headers: {
+        "Content-Type": "multipart/form-data",
       },
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        responseType: "blob",
-      }
-    )
+      responseType: "blob",
+    })
     .then((response) => {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `${primary_key}_reference_sequence.fasta`);
+      link.setAttribute("download", filename);
       document.body.appendChild(link);
       link.click();
     });
 }
-export { apiClient, download_reference_sequence };
+
+function download_reference_sequence(primary_key: string) {
+  download_file_from_endpoint(
+    "reference_sequence",
+    { primary_key },
+    `${primary_key}_reference_sequence.fasta`
+  );
+}
+
+function download_zipsamples() {
+  download_file_from_endpoint("admin/zipsamples", {}, "samples.zip");
+}
+
+export { apiClient, download_zipsamples, download_reference_sequence };

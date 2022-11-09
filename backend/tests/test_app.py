@@ -1,4 +1,6 @@
 from typing import Dict
+import io
+import zipfile
 
 
 def test_remaining(client):
@@ -114,3 +116,24 @@ def test_admin_allusers_valid(client):
     response = client.get("/admin/allusers", headers=headers)
     assert response.status_code == 200
     assert "users" in response.json
+
+
+def test_admin_zipsamples_invalid(client):
+    # no auth header
+    response = client.post("/admin/zipsamples")
+    assert response.status_code == 401
+    # valid non-admin user auth header
+    headers = _get_auth_headers(client)
+    response = client.post("/admin/zipsamples", headers=headers)
+    assert response.status_code == 401
+
+
+def test_admin_zipsamples_valid(client):
+    headers = _get_auth_headers(client, "admin@embl.de", "admin")
+    response = client.post("/admin/zipsamples", headers=headers)
+    assert response.status_code == 200
+    zip_file = zipfile.ZipFile(io.BytesIO(response.data))
+    assert len(zip_file.filelist) == 1
+    assert zip_file.filelist[0].filename == "samples.tsv"
+    tsv = zip_file.read("samples.tsv")
+    assert tsv == b"date\tprimary_key\temail\tname\n"
