@@ -1,13 +1,11 @@
 services:
   backend:
-    build:
-      ./backend
+    build: ./backend
     ports:
       - 5000:5000
     volumes:
       - ${PWD}/docker_volume:/circuit_seq_data
   frontend:
-    build:
-      ./frontend
+    build: ./frontend
     ports:
       - 80:80
