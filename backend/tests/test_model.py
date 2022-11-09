@@ -18,20 +18,25 @@ def test_settings(app, tmp_path):
         settings["plate_n_rows"] = 14
         settings["plate_n_cols"] = 18
         email = "test@test.com"
-        assert model.set_current_settings(email, settings) is True
+        msg, code = model.set_current_settings(email, settings)
+        assert code == 200
+        assert "Settings updated" in msg
         assert _count_settings() == 2
         new_settings = model.get_current_settings()
         assert new_settings["plate_n_rows"] == 14
         assert new_settings["plate_n_cols"] == 18
         # settings dict missing required fields is a no-op
-        assert model.set_current_settings(email, {"plate_n_rows": 10}) is False
+        msg, code = model.set_current_settings(email, {"plate_n_rows": 10})
+        assert code == 401
+        assert "settings not updated" in msg
         assert _count_settings() == 2
         assert new_settings["plate_n_rows"] == 14
         assert new_settings["plate_n_cols"] == 18
-        assert (
-            model.set_current_settings(email, {"plate_n_rows": 10, "plate_n_cols": 2})
-            is True
+        msg, code = model.set_current_settings(
+            email, {"plate_n_rows": 10, "plate_n_cols": 2}
         )
+        assert code == 200
+        assert "Settings updated" in msg
         assert _count_settings() == 3
         new_settings = model.get_current_settings()
         assert new_settings["plate_n_rows"] == 10

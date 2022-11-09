@@ -8,7 +8,7 @@ const selected_file = ref(null as null | Blob);
 
 function on_file_changed(event: Event) {
   const target = event.target as HTMLInputElement;
-  if (target != null && target.files != null) {
+  if (target.files != null && target.files.length > 0) {
     selected_file.value = target.files[0];
   } else {
     selected_file.value = null;
@@ -49,7 +49,6 @@ const previous_samples = ref([] as Sample[]);
 apiClient
   .get("samples")
   .then((response) => {
-    console.log(response.data);
     current_samples.value = response.data.current_samples;
     previous_samples.value = response.data.previous_samples;
   })
