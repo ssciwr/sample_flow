@@ -6,37 +6,35 @@ build-backend = "setuptools.build_meta"
 name = "circuit_seq_server"
 description = "Add short description here"
 readme = "README.md"
-maintainers = [
-    { name = "Liam Keegan", email = "ssc@iwr.uni-heidelberg.de" },
-]
+maintainers = [{ name = "Liam Keegan", email = "ssc@iwr.uni-heidelberg.de" }]
 dynamic = ["version"]
 requires-python = ">=3.8"
 license = { text = "MIT" }
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "Operating System :: OS Independent",
-    "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent",
+  "License :: OSI Approved :: MIT License",
 ]
-dependencies = ["flask", "flask-cors", "flask-jwt-extended", "flask-sqlalchemy", "argon2-cffi", "click", "biopython"]
+dependencies = [
+  "flask",
+  "flask-cors",
+  "flask-jwt-extended",
+  "flask-sqlalchemy",
+  "argon2-cffi",
+  "click",
+  "biopython",
+  "gunicorn",
+]
 
 [project.scripts]
 circuit_seq_server = "circuit_seq_server.main:main"
 
 [project.optional-dependencies]
-tests = [
-    "pytest",
-    "pytest-cov",
-]
-docs = [
-    "m2r2",
-    "sphinx",
-    "sphinx_rtd_theme",
-]
+tests = ["pytest", "pytest-cov"]
+docs = ["m2r2", "sphinx", "sphinx_rtd_theme"]
 
 [tool.setuptools.dynamic]
 version = { attr = "circuit_seq_server.__version__" }
 
 [tool.pytest.ini_options]
-testpaths = [
-    "tests",
-]
+testpaths = ["tests"]

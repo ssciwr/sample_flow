@@ -8,7 +8,7 @@ def get_logger(name: str):
     handler = logging.StreamHandler()
     handler.setFormatter(
         logging.Formatter(
-            "%(name)s  | [%(asctime)s %(levelname)s] %(message)s", "%H:%M:%S"
+            "%(name)s | [%(asctime)s %(levelname)s] %(message)s", "%H:%M:%S"
         )
     )
     logger.addHandler(handler)

@@ -17,17 +17,22 @@ The website is then served at http://localhost:8080/
 ## Run locally with Python and npm
 
 Clone the repo:
+
 ```sh
 git clone https://github.com/ssciwr/circuit_seq.git
 cd circuit_seq
 ```
+
 Install and run the backend:
+
 ```sh
 cd backend
 pip install .
 circuit_seq_server
 ```
+
 Install and run the frontend:
+
 ```sh
 cd frontend
 npm install

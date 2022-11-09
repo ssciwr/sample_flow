@@ -1,17 +1,15 @@
-FROM node:16-slim
+FROM node:16-slim as builder
 
-WORKDIR /app
-
-COPY . .
-
-RUN npm install -g http-server
+COPY package*.json ./
 
 RUN npm install
 
+COPY . .
+
 RUN npm run build-only
 
-# debug server
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "80"]
+FROM nginx
 
-# production server
-# CMD ["http-server", "dist"]
+COPY --from=builder dist /usr/share/nginx/html
+
+COPY nginx.conf /etc/nginx/conf.d/default.conf
