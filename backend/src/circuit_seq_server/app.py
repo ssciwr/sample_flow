@@ -80,11 +80,8 @@ def create_app(data_path: str = "/circuit_seq_data"):
         email = request.json.get("email", None)
         password = request.json.get("password", None)
         logger.info(f"Signup request from {email}")
-        if add_new_user(email, password):
-            logger.info(f"  -> signup successful")
-            logger.info(f"  -> [todo] activation email sent")
-            return jsonify(result="success")
-        return jsonify(result="Signup failed"), 401
+        message, code = add_new_user(email, password)
+        return jsonify(message=message), code
 
     @app.route("/remaining", methods=["GET"])
     def remaining():

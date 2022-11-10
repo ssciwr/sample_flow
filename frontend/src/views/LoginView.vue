@@ -66,12 +66,10 @@ function do_signup() {
       password: signup_password.value,
     })
     .then((response) => {
-      console.log(`Signup successful: ${response.data}`);
-      signup_response_message.value = "Signup successful, you can now login!";
-      // todo: email activation step
+      signup_response_message.value = response.data.message;
     })
     .catch((error) => {
-      signup_response_message.value = `Signup failed: ${error.response.data}`;
+      signup_response_message.value = error.response.data.message;
     });
 }
 </script>
@@ -176,10 +174,10 @@ function do_signup() {
             </button>
           </td>
         </tr>
-        <tr>
-          <td>{{ signup_response_message }}</td>
-        </tr>
       </table>
+      <p style="font-style: italic">
+        {{ signup_response_message }}
+      </p>
     </Item>
   </main>
 </template>
