@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import Optional, Any, Dict, Tuple
+import re
 import shutil
 import argon2
 import tempfile
@@ -171,7 +172,27 @@ class User(db.Model):
         }
 
 
-def add_new_user(email: str, password: str, is_admin: bool = False) -> bool:
+def is_valid_email(email: str) -> bool:
+    return re.match(r"\S+@((\S*heidelberg)|embl|dkfz)\.de$", email) is not None
+
+
+def is_valid_password(password: str) -> bool:
+    return re.match(r"^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9]).{8,}$", password) is not None
+
+
+def add_new_user(
+    email: str, password: str, is_admin: bool = False, skip_validation: bool = False
+) -> Tuple[str, int]:
+    if not skip_validation:
+        # todo: remove this option when _add_temporary_users_for_testing() is removed
+        if not is_valid_email(email):
+            return "Please use a uni-heidelberg, dkfz or embl email address.", 401
+        if not is_valid_password(password):
+            return (
+                "Password must contain at least 8 characters, including lower-case, upper-case and a number",
+                401,
+            )
+    # todo: check user doesn't already exist
     # todo: active should be false until they click on emailed activation link
     db.session.add(
         User(
@@ -182,7 +203,10 @@ def add_new_user(email: str, password: str, is_admin: bool = False) -> bool:
         )
     )
     db.session.commit()
-    return True
+    return (
+        f"Successful signup for {email} [todo: please click on the activation link sent to this email address]",
+        200,
+    )
 
 
 def add_new_sample(
@@ -247,7 +271,7 @@ def _add_temporary_users_for_testing():
         if not db.session.execute(
             db.select(User).filter(User.email == email)
         ).scalar_one_or_none():
-            add_new_user(email, name, is_admin)
+            add_new_user(email, name, is_admin, skip_validation=True)
 
 
 def _add_temporary_samples_for_testing():

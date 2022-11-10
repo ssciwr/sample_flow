@@ -66,19 +66,38 @@ def test_add_new_sample(app, tmp_path):
         assert model.count_samples_this_week() == 1
 
 
-def test_add_new_user(app):
+def _count_users() -> int:
+    return len(model.db.session.execute(model.db.select(model.User)).scalars().all())
+
+
+def test_add_new_user_invalid(app):
+    password_valid = "abcABC123"
+    email_valid = "joe.bloggs@embl.de"
     with app.app_context():
-        n_users = len(
-            model.db.session.execute(model.db.select(model.User)).scalars().all()
-        )
-        # add a new user
-        email = "x@embl.de"
-        password = "passwdP1"
-        assert model.add_new_user(email, password, is_admin=False) is True
-        assert (
-            len(model.db.session.execute(model.db.select(model.User)).scalars().all())
-            == n_users + 1
-        )
+        for email in ["joe@gmail.com", "@embl.de"]:
+            msg, code = model.add_new_user(email, password_valid, is_admin=False)
+            assert code == 401
+            assert "email" in msg
+        for password in [
+            "",
+            "abc123A",
+            "passwordpassword",
+            "abc12345678",
+            "asd!(*&@#@!(*#%ASDASDFGK",
+        ]:
+            msg, code = model.add_new_user(email_valid, password, is_admin=False)
+            assert code == 401
+            assert "Password" in msg
+
+
+def test_add_new_user_valid(app):
+    email = "x@embl.de"
+    password = "passwdP1"
+    with app.app_context():
+        n_users = _count_users()
+        msg, code = model.add_new_user(email, password, is_admin=False)
+        assert code == 200
+        assert _count_users() == n_users + 1
         user = model.db.session.execute(
             model.db.select(model.User).filter(model.User.email == email)
         ).scalar_one_or_none()
