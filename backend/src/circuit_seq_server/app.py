@@ -22,6 +22,7 @@ from circuit_seq_server.model import (
     count_samples_this_week,
     get_current_settings,
     set_current_settings,
+    update_samples_zipfile,
     _add_temporary_users_for_testing,
     _add_temporary_samples_for_testing,
 )
@@ -206,6 +207,17 @@ def create_app(data_path: str = "/circuit_seq_data"):
         return jsonify(
             current_samples=current_samples, previous_samples=previous_samples
         )
+
+    @app.route("/admin/zipsamples", methods=["POST"])
+    @jwt_required()
+    def admin_zip_samples():
+        if not current_user.is_admin:
+            return jsonify("Admin account required"), 401
+        logger.info(
+            f"Request for zipfile of samples from Admin user {current_user.email}"
+        )
+        zip_file = update_samples_zipfile(data_path, datetime.date.today())
+        return flask.send_file(zip_file, as_attachment=True)
 
     @app.route("/admin/allusers", methods=["GET"])
     @jwt_required()

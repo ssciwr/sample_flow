@@ -2,7 +2,11 @@
 import Item from "@/components/ListItem.vue";
 import { ref, computed } from "vue";
 import type { Sample, User, Settings } from "@/types";
-import { apiClient, download_reference_sequence } from "@/api-client";
+import {
+  apiClient,
+  download_zipsamples,
+  download_reference_sequence,
+} from "@/api-client";
 
 const current_samples = ref([] as Sample[]);
 const previous_samples = ref([] as Sample[]);
@@ -87,6 +91,11 @@ function save_settings() {
           </td>
         </tr>
       </table>
+      <p>
+        <a href="" @click.prevent="download_zipsamples()">
+          Download as zipfile
+        </a>
+      </p>
     </Item>
     <Item>
       <template #icon>

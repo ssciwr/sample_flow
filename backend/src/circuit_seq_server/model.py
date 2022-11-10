@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import Optional, Any, Dict, Tuple
+import shutil
 import argon2
 import tempfile
 import pathlib
@@ -10,6 +11,7 @@ from Bio import SeqIO
 from circuit_seq_server.logger import get_logger
 from circuit_seq_server.primary_key import get_primary_key
 from circuit_seq_server.date_utils import get_start_of_week
+import csv
 
 db = SQLAlchemy()
 ph = argon2.PasswordHasher()
@@ -72,12 +74,67 @@ class Sample(db.Model):
     date: datetime.date = db.Column(db.Date, nullable=False)
 
 
+def _samples_this_week(current_date: Optional[datetime.date] = None):
+    start_of_week = get_start_of_week(current_date)
+    return db.session.execute(
+        db.select(Sample)
+        .filter(Sample.date >= start_of_week)
+        .filter(Sample.date < start_of_week + datetime.timedelta(weeks=1))
+    ).all()
+
+
 def count_samples_this_week(current_date: Optional[datetime.date] = None) -> int:
-    return len(
-        db.session.execute(
-            db.select(Sample).filter(Sample.date >= get_start_of_week(current_date))
-        ).all()
+    return len(_samples_this_week(current_date))
+
+
+def _write_samples_as_tsv_this_week(
+    data_path: str, current_date: Optional[datetime.date] = None
+) -> str:
+    current_samples = _samples_this_week(current_date)
+    logger.info(current_samples)
+    if current_date is None:
+        current_date = datetime.date.today()
+    year, week, day = current_date.isocalendar()
+    filename = f"{data_path}/{year}/{week}/reference/samples.tsv"
+    logger.info(f"Updating {filename}...")
+    with open(filename, "w", newline="") as tsv_file:
+        writer = csv.writer(tsv_file, delimiter="\t", lineterminator="\n")
+        writer.writerow(
+            [
+                "date",
+                "primary_key",
+                "email",
+                "name",
+            ]
+        )
+        for sample_tuple in current_samples:
+            sample = sample_tuple[0]
+            logger.info(f"  - {sample.primary_key}")
+            writer.writerow(
+                [
+                    sample.date,
+                    sample.primary_key,
+                    sample.email,
+                    sample.name,
+                ]
+            )
+    return filename
+
+
+def update_samples_zipfile(
+    data_path: str, current_date: Optional[datetime.date] = None
+) -> str:
+    year, week, day = datetime.date.today().isocalendar()
+    base_path = pathlib.Path(f"{data_path}/{year}/{week}")
+    pathlib.Path(f"{base_path}/reference").mkdir(parents=True, exist_ok=True)
+    tsv_file = _write_samples_as_tsv_this_week(data_path, current_date)
+    logger.info(f"  -> {tsv_file}")
+    logger.info(f"Creating zip file of {base_path}/reference..")
+    zip_filename = shutil.make_archive(
+        str(base_path / "samples"), "zip", base_path / "reference"
     )
+    logger.info(f"  -> created zip file {zip_filename}")
+    return zip_filename
 
 
 @dataclass
