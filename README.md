@@ -7,7 +7,7 @@ A work-in-progress prototype of the CircuitSEQ website.
 
 ## Try it out online
 
-It is now running on a heiCLOUD VM here: http://circuitseq.iwr.uni-heidelberg.de/
+It is now running on a heiCLOUD VM here: https://circuitseq.iwr.uni-heidelberg.de/
 
 ### Testing accounts
 

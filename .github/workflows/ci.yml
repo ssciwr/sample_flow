@@ -31,6 +31,15 @@ jobs:
       - run: npm install
       - run: npm run lint
       - run: npm run build
+      - run: npm run test:unit:ci
+      # todo: these e2e tests are not generating coverage reports on CI:
+      - run: DEBUG=cypress:* npm run test:e2e:ci
+      - uses: codecov/codecov-action@v2
+        with:
+          files: ./frontend/coverage/coverage-final.json
+          name: ${{ matrix.node-version }}
+          fail_ci_if_error: true
+          verbose: true
   backend:
     runs-on: ubuntu-latest
     name: "Backend :: Python ${{ matrix.python-version }}"

@@ -2,38 +2,34 @@
 
 A work-in-progress vue.js prototype of the front end.
 
-## Features
+Note: these are development install/use instructions, see
+[README_DEV.md](https://github.com/ssciwr/circuit_seq/blob/main/README_DEV.md)
+for instructions on running the full production docker-compose setup locally
 
-- about page with info on project
-- login page (currently any email address works, no pasword)
-- samples page where logged in users can see their samples and request more
-- you can log out and log in again with a different email address
-- the admin page lists all requested samples from all users
+## Installation
 
-## Notes
-
-- there is no backend yet! i.e. all data is lost when page is refreshed or closed
-
-## Project Setup
-
-```sh
+```bash
 npm install
 ```
 
-### Compile and Hot-Reload for Development
+### Use
 
-```sh
+```bash
 npm run dev
 ```
 
 ### Type-Check, Compile and Minify for Production
 
-```sh
+```bash
 npm run build
 ```
 
 ### Lint with [ESLint](https://eslint.org/)
 
-```sh
+```bash
 npm run lint
 ```
+
+### Tests
+
+TODO
