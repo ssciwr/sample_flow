@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import Item from "@/components/ListItem.vue";
 import { ref, computed } from "vue";
-import type { Sample, User, Settings } from "@/types";
+import type { Sample, User, Settings } from "@/utils/types";
 import {
   apiClient,
   download_zipsamples,
   download_reference_sequence,
-} from "@/api-client";
+} from "@/utils/api-client";
 
 const current_samples = ref([] as Sample[]);
 const previous_samples = ref([] as Sample[]);

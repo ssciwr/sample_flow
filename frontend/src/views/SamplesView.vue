@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import Item from "@/components/ListItem.vue";
-import { apiClient, download_reference_sequence } from "@/api-client";
-import type { Sample } from "@/types";
+import { apiClient, download_reference_sequence } from "@/utils/api-client";
+import type { Sample } from "@/utils/types";
 const new_sample_name = ref("");
 const selected_file = ref(null as null | Blob);
 

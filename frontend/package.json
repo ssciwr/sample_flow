@@ -4,8 +4,9 @@
   "scripts": {
     "dev": "vite",
     "build": "run-p type-check build-only",
-    "preview": "vite preview --port 4173",
+    "preview": "vite --port 4173",
     "test:unit": "vitest --environment jsdom",
+    "test:unit:ci": "vitest run --coverage",
     "test:e2e": "start-server-and-test preview http://localhost:4173/ 'cypress open --e2e'",
     "test:e2e:ci": "start-server-and-test preview http://localhost:4173/ 'cypress run --e2e'",
     "build-only": "vite build",
@@ -19,11 +20,14 @@
     "vue-router": "^4.1.5"
   },
   "devDependencies": {
+    "@cypress/code-coverage": "^3.10.0",
     "@rushstack/eslint-patch": "^1.1.4",
+    "@testing-library/vue": "^6.6.1",
     "@types/jsdom": "^20.0.0",
     "@types/node": "^16.11.56",
     "@vitejs/plugin-vue": "^3.0.3",
     "@vitejs/plugin-vue-jsx": "^2.0.1",
+    "@vitest/coverage-c8": "^0.25.1",
     "@vue/eslint-config-prettier": "^7.0.0",
     "@vue/eslint-config-typescript": "^11.0.0",
     "@vue/test-utils": "^2.0.2",
@@ -38,6 +42,7 @@
     "start-server-and-test": "^1.14.0",
     "typescript": "~4.7.4",
     "vite": "^3.0.9",
+    "vite-plugin-istanbul": "^3.0.2",
     "vitest": "^0.23.0",
     "vue-tsc": "^0.40.7"
   }

@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import Item from "@/components/ListItem.vue";
 import { ref } from "vue";
-import { apiClient } from "@/api-client";
+import { apiClient } from "@/utils/api-client";
 const remaining = ref(0);
-apiClient.get("remaining").then((response) => {
-  console.log(response);
-  remaining.value = response.data.remaining;
-});
+apiClient
+  .get("remaining")
+  .then((response) => {
+    console.log(response);
+    remaining.value = response.data.remaining;
+  })
+  .catch((error) => {
+    console.log("Could not connect to server");
+  });
 </script>
 
 <template>
