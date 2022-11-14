@@ -2,10 +2,16 @@ services:
   backend:
     build: ./backend
     ports:
-      - 5000:5000
+      - 8080:8080
     volumes:
-      - ${PWD}/docker_volume:/circuit_seq_data
+      - ${CIRCUIT_SEQ_DATA:-./docker_volume}:/circuit_seq_data
+      - ${CIRCUIT_SEQ_SSL_CERT:-./cert.pem}:/circuit_seq_ssl_cert.pem
+      - ${CIRCUIT_SEQ_SSL_KEY:-./key.pem}:/circuit_seq_ssl_key.pem
   frontend:
     build: ./frontend
     ports:
       - 80:80
+      - 443:443
+    volumes:
+      - ${CIRCUIT_SEQ_SSL_CERT:-./cert.pem}:/circuit_seq_ssl_cert.pem
+      - ${CIRCUIT_SEQ_SSL_KEY:-./key.pem}:/circuit_seq_ssl_key.pem

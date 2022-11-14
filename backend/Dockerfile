@@ -6,4 +6,4 @@ COPY . .
 
 RUN pip install .
 
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "circuit_seq_server:create_app()"]
+CMD ["gunicorn", "--certfile", "/circuit_seq_ssl_cert.pem", "--keyfile", "/circuit_seq_ssl_key.pem", "--bind", "0.0.0.0:8080", "circuit_seq_server:create_app()"]

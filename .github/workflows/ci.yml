@@ -47,6 +47,10 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: pip install -e .[tests]
       - run: python -m pytest --cov=circuit_seq_server --cov-report=xml -v
+      - run: |
+          openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -sha256 -days 365 -nodes -subj '/CN=localhost'
+          circuit_seq_server --help
+          timeout 5 circuit_seq_server || [ "$?" -eq 124 ]
       - uses: codecov/codecov-action@v2
         with:
           files: ./backend/coverage.xml

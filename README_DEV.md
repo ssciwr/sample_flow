@@ -1,4 +1,4 @@
-# CircuitSEQ website prototype
+# CircuitSEQ website developer info
 
 Some information on how to locally build and deploy the website if you would like to make changes to the code.
 
@@ -12,7 +12,29 @@ cd circuit_seq
 docker-compose up --build
 ```
 
-The website is then served at http://localhost:8080/
+### Database
+
+The database will by default be stored in a `docker_volume` folder
+in the folder where you run the docker-compose command.
+To modify this location, set the `CIRCUIT_SEQ_DATA` environment variable.
+
+### SSL
+
+SSL cert/key by default are assumed to exist as `cert.pem` and `key.pem`
+in the folder where you run the docker-compose command.
+To point to different files, set the `CIRCUIT_SEQ_SSL_CERT` and `CIRCUIT_SEQ_SSL_KEY` environment variables.
+
+To generate a cert/key pair:
+
+```
+openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -sha256 -days 365 -nodes -subj '/CN=localhost'
+```
+
+### URL
+
+The website is then served at https://localhost/
+
+Note that these are self-signed keys and your browser will still warn about the site being insecure.
 
 ## Run locally with Python and npm
 
@@ -28,6 +50,7 @@ Install and run the backend:
 ```sh
 cd backend
 pip install .
+cd ..
 circuit_seq_server
 ```
 
@@ -36,10 +59,10 @@ Install and run the frontend:
 ```sh
 cd frontend
 npm install
-npm run dev -- --host=8080
+npm run dev
 ```
 
-The website is then served at http://localhost:8080/
+The website is then served at http://localhost:5173/
 
 ## Implementation
 
@@ -54,3 +77,8 @@ The frontend is a vue.js app, see [frontend/README.md](frontend/README.md) for m
 ### Docker
 
 Both the backend and the frontend have a Dockerfile, and there is docker-compose file to coordinate them.
+
+## Production deployment
+
+Same as docker-compose but with additional `.env` and `frontend/.env.local` files
+to set location of database, cert/key pair from letsencrypt, and public url.
