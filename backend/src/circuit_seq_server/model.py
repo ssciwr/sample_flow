@@ -101,7 +101,7 @@ def _write_samples_as_tsv_this_week(
     if current_date is None:
         current_date = datetime.date.today()
     year, week, day = current_date.isocalendar()
-    filename = f"{data_path}/{year}/{week}/reference/samples.tsv"
+    filename = f"{data_path}/{year}/{week}/inputs/samples.tsv"
     logger.info(f"Updating {filename}...")
     with open(filename, "w", newline="") as tsv_file:
         writer = csv.writer(tsv_file, delimiter="\t", lineterminator="\n")
@@ -134,12 +134,14 @@ def update_samples_zipfile(
 ) -> str:
     year, week, day = datetime.date.today().isocalendar()
     base_path = pathlib.Path(f"{data_path}/{year}/{week}")
-    pathlib.Path(f"{base_path}/reference").mkdir(parents=True, exist_ok=True)
+    pathlib.Path(f"{base_path}/inputs").mkdir(parents=True, exist_ok=True)
     tsv_file = _write_samples_as_tsv_this_week(data_path, current_date)
     logger.info(f"  -> {tsv_file}")
-    logger.info(f"Creating zip file of {base_path}/reference..")
+    logger.info(f"Creating zip file of {base_path}/inputs..")
     zip_filename = shutil.make_archive(
-        str(base_path / "samples"), "zip", base_path / "reference"
+        base_name=str(base_path / "samples"),
+        format="zip",
+        root_dir=f"{base_path}/inputs",
     )
     logger.info(f"  -> created zip file {zip_filename}")
     return zip_filename
@@ -237,11 +239,11 @@ def add_new_sample(
     if key is None:
         return None
     reference_sequence_description: Optional[str] = None
-    pathlib.Path(f"{data_path}/{year}/{week}/reference").mkdir(
+    pathlib.Path(f"{data_path}/{year}/{week}/inputs/references").mkdir(
         parents=True, exist_ok=True
     )
     if reference_sequence_file is not None:
-        filename = f"{data_path}/{year}/{week}/reference/{key}_{name}.fasta"
+        filename = f"{data_path}/{year}/{week}/inputs/references/{key}_{name}.fasta"
         with tempfile.TemporaryDirectory() as tmp_dir:
             temp_file = pathlib.Path(tmp_dir) / "temp.fasta"
             logger.info(
