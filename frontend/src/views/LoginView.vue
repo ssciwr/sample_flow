@@ -93,13 +93,14 @@ function do_signup() {
               <input
                 v-model="login_email_address"
                 placeholder="your.name@uni-heidelberg.de"
+                maxlength="256"
               />
             </td>
           </tr>
           <tr>
             <td style="text-align: right">Password:</td>
             <td>
-              <input v-model="login_password" type="password" />
+              <input v-model="login_password" type="password" maxlength="256" />
             </td>
             <td>{{ login_error_message }}</td>
           </tr>
@@ -129,6 +130,7 @@ function do_signup() {
               v-model="signup_email_address"
               placeholder="your.name@uni-heidelberg.de"
               :title="signup_email_address_message"
+              maxlength="256"
             />
           </td>
           <td style="font-style: italic">{{ signup_email_address_message }}</td>
@@ -141,6 +143,7 @@ function do_signup() {
               type="password"
               placeholder="password"
               :title="signup_password_message"
+              maxlength="256"
             />
           </td>
           <td style="font-style: italic">{{ signup_password_message }}</td>

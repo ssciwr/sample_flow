@@ -28,7 +28,11 @@ class Settings(db.Model):
 
 
 def default_settings_dict() -> Dict:
-    return {"plate_n_rows": 8, "plate_n_cols": 12}
+    return {
+        "plate_n_rows": 8,
+        "plate_n_cols": 12,
+        "running_options": ["dna_r9.4.1_450bps_sup.cfg", "dna_r9.4.1_480bps_sup.cfg"],
+    }
 
 
 def get_current_settings() -> Dict:
@@ -69,6 +73,7 @@ class Sample(db.Model):
     email: str = db.Column(db.String(256), nullable=False)
     primary_key: str = db.Column(db.String(32), nullable=False, unique=True)
     name: str = db.Column(db.String(128), nullable=False)
+    running_option: str = db.Column(db.String(128), nullable=False)
     reference_sequence_description: Optional[str] = db.Column(
         db.String(256), nullable=True
     )
@@ -106,6 +111,7 @@ def _write_samples_as_tsv_this_week(
                 "primary_key",
                 "email",
                 "name",
+                "running_option",
             ]
         )
         for sample_tuple in current_samples:
@@ -117,6 +123,7 @@ def _write_samples_as_tsv_this_week(
                     sample.primary_key,
                     sample.email,
                     sample.name,
+                    sample.running_option,
                 ]
             )
     return filename
@@ -212,6 +219,7 @@ def add_new_user(
 def add_new_sample(
     email: str,
     name: str,
+    running_option: str,
     reference_sequence_file: Optional[Any],
     data_path: str,
 ) -> Optional[Sample]:
@@ -257,6 +265,7 @@ def add_new_sample(
         name=name,
         primary_key=key,
         reference_sequence_description=reference_sequence_description,
+        running_option=running_option,
         date=today,
     )
     db.session.add(new_sample)
@@ -276,6 +285,7 @@ def _add_temporary_users_for_testing():
 
 def _add_temporary_samples_for_testing():
     # add temporary samples if not already in db
+    running_option = get_current_settings()["running_options"][0]
     for week in [43, 42, 40]:
         for n in [1, 2, 3]:
             key = f"22_{week}_A{n}"
@@ -287,6 +297,7 @@ def _add_temporary_samples_for_testing():
                     name=f"builtin_test_sample{n}",
                     primary_key=key,
                     reference_sequence_description=None,
+                    running_option=running_option,
                     date=datetime.date.fromisocalendar(2022, week, n),
                 )
                 db.session.add(new_sample)

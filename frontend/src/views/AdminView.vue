@@ -22,10 +22,22 @@ apiClient.get("admin/allusers").then((response) => {
 });
 
 const settings = ref({} as Settings);
+const new_running_option = ref("");
 const settings_message = ref("");
 apiClient.get("admin/settings").then((response) => {
   settings.value = response.data;
 });
+
+function add_running_option() {
+  settings.value.running_options.push(new_running_option.value);
+  new_running_option.value = "";
+}
+
+function remove_running_option(option: string) {
+  settings.value.running_options = settings.value.running_options.filter(
+    (t) => t !== option
+  );
+}
 
 function update_n_rows(event: Event) {
   const target = event.target as HTMLInputElement;
@@ -69,6 +81,7 @@ function save_settings() {
           <th>Primary Key</th>
           <th>Email</th>
           <th>Sample Name</th>
+          <th>Running Option</th>
           <th>Reference Sequence</th>
         </tr>
         <tr v-for="sample in current_samples" :key="sample.id">
@@ -76,6 +89,7 @@ function save_settings() {
           <td>{{ sample["primary_key"] }}</td>
           <td>{{ sample["email"] }}</td>
           <td>{{ sample["name"] }}</td>
+          <td>{{ sample["running_option"] }}</td>
           <td>
             <template v-if="sample['reference_sequence_description']">
               <a
@@ -130,6 +144,23 @@ function save_settings() {
           <td>{{ plate_range_string }}</td>
         </tr>
         <tr>
+          <td>Running options:</td>
+          <td>
+            <ul>
+              <li v-for="option in settings.running_options">
+                {{ option }}
+                <button @click="remove_running_option(option)">x</button>
+              </li>
+              <li>
+                <form @submit.prevent="add_running_option">
+                  <input v-model="new_running_option" maxlength="256" />
+                  <button>add</button>
+                </form>
+              </li>
+            </ul>
+          </td>
+        </tr>
+        <tr>
           <td></td>
           <td>
             <button @click="save_settings">Save Settings</button>
@@ -151,6 +182,7 @@ function save_settings() {
           <th>Primary Key</th>
           <th>Email</th>
           <th>Sample Name</th>
+          <th>Running Option</th>
           <th>Reference Sequence</th>
         </tr>
         <tr v-for="sample in previous_samples" :key="sample.id">
@@ -158,6 +190,7 @@ function save_settings() {
           <td>{{ sample["primary_key"] }}</td>
           <td>{{ sample["email"] }}</td>
           <td>{{ sample["name"] }}</td>
+          <td>{{ sample["running_option"] }}</td>
           <td>
             <template v-if="sample['reference_sequence_description']">
               <a
