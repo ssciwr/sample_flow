@@ -150,7 +150,7 @@ def create_app(data_path: str = "/circuit_seq_data"):
             f"  -> found reference sequence with description {user_sample.reference_sequence_description}"
         )
         year, week, day = user_sample.date.isocalendar()
-        filename = f"{data_path}/{year}/{week}/reference/{user_sample.primary_key}_{user_sample.name}.fasta"
+        filename = f"{data_path}/{year}/{week}/inputs/references/{user_sample.primary_key}_{user_sample.name}.fasta"
         file = pathlib.Path(filename)
         if not file.is_file():
             logger.info(f"  -> fasta file {file} not found")
