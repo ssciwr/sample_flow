@@ -10,7 +10,7 @@ def _count_settings() -> int:
 
 def test_settings(app, tmp_path):
     with app.app_context():
-        assert _count_settings() == 0
+        assert _count_settings() == 1
         settings = model.get_current_settings()
         assert _count_settings() == 1
         assert settings["plate_n_rows"] == 8
@@ -33,7 +33,8 @@ def test_settings(app, tmp_path):
         assert new_settings["plate_n_rows"] == 14
         assert new_settings["plate_n_cols"] == 18
         msg, code = model.set_current_settings(
-            email, {"plate_n_rows": 10, "plate_n_cols": 2}
+            email,
+            {"plate_n_rows": 10, "plate_n_cols": 2, "running_options": ["x", "y"]},
         )
         assert code == 200
         assert "Settings updated" in msg
@@ -41,6 +42,7 @@ def test_settings(app, tmp_path):
         new_settings = model.get_current_settings()
         assert new_settings["plate_n_rows"] == 10
         assert new_settings["plate_n_cols"] == 2
+        assert new_settings["running_options"] == ["x", "y"]
 
 
 def test_add_new_sample(app, tmp_path):
@@ -53,10 +55,13 @@ def test_add_new_sample(app, tmp_path):
         assert len(model.db.session.execute(this_week_samples).scalars().all()) == 0
         assert model.count_samples_this_week() == 0
         # add a sample without a reference sequence
-        new_sample = model.add_new_sample("u1@embl.de", "s1", None, str(tmp_path))
+        new_sample = model.add_new_sample(
+            "u1@embl.de", "s1", "running option", None, str(tmp_path)
+        )
         assert new_sample is not None
         assert new_sample.email == "u1@embl.de"
         assert new_sample.name == "s1"
+        assert new_sample.running_option == "running option"
         assert new_sample.primary_key == f"{year%100}_{week}_A1"
         assert new_sample.date == current_date
         assert new_sample.reference_sequence_description is None

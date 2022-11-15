@@ -54,6 +54,19 @@ def test_samples_valid(client):
     assert "previous_samples" in response.json
 
 
+def test_running_options_invalid(client):
+    # no auth header
+    response = client.get("/running_options")
+    assert response.status_code == 401
+
+
+def test_running_options_valid(client):
+    headers = _get_auth_headers(client)
+    response = client.get("/running_options", headers=headers)
+    assert response.status_code == 200
+    assert "running_options" in response.json
+
+
 def test_admin_settings_invalid(client):
     # no auth header
     response = client.get("/admin/settings")
@@ -73,7 +86,11 @@ def test_admin_settings_valid(client):
     # set new valid settings
     response = client.post(
         "/admin/settings",
-        json={"plate_n_rows": 14, "plate_n_cols": 18},
+        json={
+            "plate_n_rows": 14,
+            "plate_n_cols": 18,
+            "running_options": ["o1", "o2", "o3"],
+        },
         headers=headers,
     )
     assert response.status_code == 200
@@ -81,6 +98,7 @@ def test_admin_settings_valid(client):
     assert response.status_code == 200
     assert response.json["plate_n_rows"] == 14
     assert response.json["plate_n_cols"] == 18
+    assert response.json["running_options"] == ["o1", "o2", "o3"]
 
 
 def test_admin_allsamples_invalid(client):
@@ -136,4 +154,4 @@ def test_admin_zipsamples_valid(client):
     assert len(zip_file.filelist) == 1
     assert zip_file.filelist[0].filename == "samples.tsv"
     tsv = zip_file.read("samples.tsv")
-    assert tsv == b"date\tprimary_key\temail\tname\n"
+    assert tsv == b"date\tprimary_key\temail\tname\trunning_option\n"

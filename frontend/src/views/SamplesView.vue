@@ -2,7 +2,7 @@
 import { computed, ref } from "vue";
 import Item from "@/components/ListItem.vue";
 import { apiClient, download_reference_sequence } from "@/utils/api-client";
-import type { Sample } from "@/utils/types";
+import type { Sample, RunningOptions } from "@/utils/types";
 const new_sample_name = ref("");
 const selected_file = ref(null as null | Blob);
 
@@ -56,9 +56,25 @@ apiClient
     console.log(error);
   });
 
+const running_options = ref([] as RunningOptions);
+const new_running_option = ref("");
+
+apiClient
+  .get("running_options")
+  .then((response) => {
+    running_options.value = response.data.running_options;
+    if (running_options.value.length > 0) {
+      new_running_option.value = running_options.value[0];
+    }
+  })
+  .catch((error) => {
+    console.log(error);
+  });
+
 function add_sample() {
   let formData = new FormData();
   formData.append("name", new_sample_name.value);
+  formData.append("running_option", new_running_option.value);
   if (selected_file.value !== null) {
     formData.append("file", selected_file.value);
   }
@@ -75,6 +91,7 @@ function add_sample() {
   selected_file.value = null;
 }
 </script>
+
 <template>
   <main>
     <Item>
@@ -88,11 +105,13 @@ function add_sample() {
           <tr>
             <th>Primary Key</th>
             <th>Sample Name</th>
+            <th>Running Option</th>
             <th>Reference Sequence</th>
           </tr>
           <tr v-for="sample in current_samples" :key="sample.id">
             <td>{{ sample["primary_key"] }}</td>
             <td>{{ sample["name"] }}</td>
+            <td>{{ sample["running_option"] }}</td>
             <td>
               <template v-if="sample['reference_sequence_description']">
                 <a
@@ -140,6 +159,16 @@ function add_sample() {
           </td>
         </tr>
         <tr>
+          <td style="text-align: right">Running option:</td>
+          <td>
+            <select v-model="new_running_option">
+              <option v-for="running_option in running_options">
+                {{ running_option }}
+              </option>
+            </select>
+          </td>
+        </tr>
+        <tr>
           <td style="text-align: right">Reference sequence (optional):</td>
           <td>
             <input
@@ -176,12 +205,14 @@ function add_sample() {
             <th>Date</th>
             <th>Primary Key</th>
             <th>Sample Name</th>
+            <td>Running Option</td>
             <th>Reference Sequence</th>
           </tr>
           <tr v-for="sample in previous_samples" :key="sample.id">
             <td>{{ new Date(sample["date"]).toLocaleDateString("en-CA") }}</td>
             <td>{{ sample["primary_key"] }}</td>
             <td>{{ sample["name"] }}</td>
+            <td>{{ sample["running_option"] }}</td>
             <td>
               <template v-if="sample['reference_sequence_description']">
                 <a

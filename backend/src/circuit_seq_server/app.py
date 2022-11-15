@@ -91,6 +91,12 @@ def create_app(data_path: str = "/circuit_seq_data"):
             - count_samples_this_week()
         )
 
+    @app.route("/running_options", methods=["GET"])
+    @jwt_required()
+    def running_options():
+        settings = get_current_settings()
+        return jsonify(running_options=settings["running_options"])
+
     @app.route("/samples", methods=["GET"])
     @jwt_required()
     def samples():
@@ -157,9 +163,12 @@ def create_app(data_path: str = "/circuit_seq_data"):
     def add_sample():
         email = current_user.email
         name = request.form.to_dict().get("name", "")
+        running_option = request.form.to_dict().get("running_option", "")
         reference_sequence_file = request.files.to_dict().get("file", None)
         logger.info(f"Adding sample {name} from {email}")
-        new_sample = add_new_sample(email, name, reference_sequence_file, data_path)
+        new_sample = add_new_sample(
+            email, name, running_option, reference_sequence_file, data_path
+        )
         if new_sample is not None:
             logger.info(f"  - > success")
             return jsonify(sample=new_sample)
