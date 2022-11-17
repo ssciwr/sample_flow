@@ -32,6 +32,7 @@ def default_settings_dict() -> Dict:
         "plate_n_rows": 8,
         "plate_n_cols": 12,
         "running_options": ["dna_r9.4.1_450bps_sup.cfg", "dna_r9.4.1_480bps_sup.cfg"],
+        "last_submission_day": 3,
     }
 
 
@@ -40,7 +41,12 @@ def get_current_settings() -> Dict:
         db.select(Settings).order_by(db.desc(Settings.id))
     ).first()
     if settings_tuple is not None:
-        return settings_tuple[0].settings_dict
+        settings_dict = settings_tuple[0].settings_dict
+        for key, value in default_settings_dict().items():
+            # use default values for any missing keys
+            if key not in settings_dict:
+                settings_dict[key] = value
+        return settings_dict
     # no settings in db: create default settings and add to db
     settings = Settings(
         datetime=datetime.datetime.today(),
@@ -80,7 +86,7 @@ class Sample(db.Model):
     date: datetime.date = db.Column(db.Date, nullable=False)
 
 
-def _samples_this_week(current_date: Optional[datetime.date] = None):
+def _samples_this_week(current_date: datetime.date):
     start_of_week = get_start_of_week(current_date)
     return db.session.execute(
         db.select(Sample)
@@ -89,8 +95,19 @@ def _samples_this_week(current_date: Optional[datetime.date] = None):
     ).all()
 
 
-def count_samples_this_week(current_date: Optional[datetime.date] = None) -> int:
+def _count_samples_this_week(current_date: datetime.date) -> int:
     return len(_samples_this_week(current_date))
+
+
+def remaining_samples_this_week(current_date: Optional[datetime.date] = None) -> int:
+    if current_date is None:
+        current_date = datetime.date.today()
+    settings = get_current_settings()
+    year, week, day = current_date.isocalendar()
+    if day > settings["last_submission_day"]:
+        return 0
+    max_samples = settings["plate_n_rows"] * settings["plate_n_cols"]
+    return max_samples - _count_samples_this_week(current_date)
 
 
 def _write_samples_as_tsv_this_week(
@@ -224,11 +241,13 @@ def add_new_sample(
     running_option: str,
     reference_sequence_file: Optional[Any],
     data_path: str,
-) -> Optional[Sample]:
+) -> Tuple[Optional[Sample], str]:
     today = datetime.date.today()
     year, week, day = today.isocalendar()
-    count = count_samples_this_week(today)
+    count = _count_samples_this_week(today)
     settings = get_current_settings()
+    if day > settings["last_submission_day"]:
+        return None, "Sample submission is closed for this week."
     key = get_primary_key(
         year=year,
         week=week,
@@ -237,7 +256,7 @@ def add_new_sample(
         n_cols=settings["plate_n_cols"],
     )
     if key is None:
-        return None
+        return None, "No more samples left this week."
     reference_sequence_description: Optional[str] = None
     pathlib.Path(f"{data_path}/{year}/{week}/inputs/references").mkdir(
         parents=True, exist_ok=True
@@ -261,6 +280,7 @@ def add_new_sample(
                 reference_sequence_description = record.description
             except Exception as e:
                 logger.info(f"Failed to parse fasta file: {e}")
+                return None, "Failed to parse reference sequence fasta file."
 
     new_sample = Sample(
         email=email,
@@ -272,7 +292,7 @@ def add_new_sample(
     )
     db.session.add(new_sample)
     db.session.commit()
-    return new_sample
+    return new_sample, ""
 
 
 def _add_temporary_users_for_testing():

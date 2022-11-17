@@ -1,5 +1,6 @@
 import circuit_seq_server.model as model
 import datetime
+from freezegun import freeze_time
 
 
 def _count_settings() -> int:
@@ -34,7 +35,12 @@ def test_settings(app, tmp_path):
         assert new_settings["plate_n_cols"] == 18
         msg, code = model.set_current_settings(
             email,
-            {"plate_n_rows": 10, "plate_n_cols": 2, "running_options": ["x", "y"]},
+            {
+                "plate_n_rows": 10,
+                "plate_n_cols": 2,
+                "running_options": ["x", "y"],
+                "last_submission_day": 5,
+            },
         )
         assert code == 200
         assert "Settings updated" in msg
@@ -43,32 +49,85 @@ def test_settings(app, tmp_path):
         assert new_settings["plate_n_rows"] == 10
         assert new_settings["plate_n_cols"] == 2
         assert new_settings["running_options"] == ["x", "y"]
+        assert new_settings["last_submission_day"] == 5
 
 
-def test_add_new_sample(app, tmp_path):
+@freeze_time("2022-11-14")
+def test_add_new_sample_mon(app, tmp_path):
     with app.app_context():
-        year, week, day = datetime.date.today().isocalendar()
-        current_date = datetime.date.fromisocalendar(year, week, day)
+        current_date = datetime.date.today()
         this_week_samples = model.db.select(model.Sample).filter(
             model.Sample.date >= current_date
         )
-        assert len(model.db.session.execute(this_week_samples).scalars().all()) == 0
-        assert model.count_samples_this_week() == 0
+        assert model._count_samples_this_week(current_date) == 0
+        assert model.remaining_samples_this_week(current_date) == 96
         # add a sample without a reference sequence
-        new_sample = model.add_new_sample(
+        new_sample, error_message = model.add_new_sample(
             "u1@embl.de", "s1", "running option", None, str(tmp_path)
         )
+        assert error_message == ""
         assert new_sample is not None
         assert new_sample.email == "u1@embl.de"
         assert new_sample.name == "s1"
         assert new_sample.running_option == "running option"
+        year, week, day = current_date.isocalendar()
         assert new_sample.primary_key == f"{year%100}_{week}_A1"
         assert new_sample.date == current_date
         assert new_sample.reference_sequence_description is None
         samples = model.db.session.execute(this_week_samples).scalars().all()
         assert len(samples) == 1
         assert samples[0] == new_sample
-        assert model.count_samples_this_week() == 1
+        assert model._count_samples_this_week(current_date) == 1
+        assert model.remaining_samples_this_week(current_date) == 95
+
+
+@freeze_time("2022-11-19")
+def test_add_new_sample_sat(app, tmp_path):
+    with app.app_context():
+        current_date = datetime.date.today()
+        assert model._count_samples_this_week(current_date) == 0
+        # try to add a sample on a saturday
+        new_sample, error_message = model.add_new_sample(
+            "u1@embl.de", "s1", "running option", None, str(tmp_path)
+        )
+        assert new_sample is None
+        assert "closed" in error_message
+        assert model._count_samples_this_week(current_date) == 0
+        settings = model.get_current_settings()
+        # make last submission day saturday
+        settings["last_submission_day"] = 6
+        model.set_current_settings("a@embl.de", settings)
+        # try to add a sample on a saturday
+        new_sample, error_message = model.add_new_sample(
+            "u1@embl.de", "s1", "running option", None, str(tmp_path)
+        )
+        assert new_sample is not None
+        assert error_message == ""
+        assert model._count_samples_this_week(current_date) == 1
+
+
+@freeze_time("2022-11-14")
+def test_add_new_sample_full(app, tmp_path):
+    with app.app_context():
+        current_date = datetime.date.today()
+        settings = model.get_current_settings()
+        settings["plate_n_rows"] = 1
+        settings["plate_n_cols"] = 1
+        model.set_current_settings("a@embl.de", settings)
+        assert model._count_samples_this_week(current_date) == 0
+        assert model.remaining_samples_this_week(current_date) == 1
+        new_sample, error_message = model.add_new_sample(
+            "u1@embl.de", "s1", "running option", None, str(tmp_path)
+        )
+        assert new_sample is not None
+        assert error_message == ""
+        assert model._count_samples_this_week(current_date) == 1
+        assert model.remaining_samples_this_week(current_date) == 0
+        new_sample, error_message = model.add_new_sample(
+            "u1@embl.de", "s2", "running option", None, str(tmp_path)
+        )
+        assert new_sample is None
+        assert "samples left this week" in error_message
 
 
 def _count_users() -> int:

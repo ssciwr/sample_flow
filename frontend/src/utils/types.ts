@@ -19,6 +19,7 @@ export type Settings = {
   plate_n_rows: number;
   plate_n_cols: number;
   running_options: Array<string>;
+  last_submission_day: number;
 };
 
 export type RunningOptions = Array<string>;

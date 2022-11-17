@@ -19,7 +19,7 @@ from circuit_seq_server.model import (
     User,
     add_new_user,
     add_new_sample,
-    count_samples_this_week,
+    remaining_samples_this_week,
     get_current_settings,
     set_current_settings,
     update_samples_zipfile,
@@ -85,11 +85,7 @@ def create_app(data_path: str = "/circuit_seq_data"):
 
     @app.route("/remaining", methods=["GET"])
     def remaining():
-        settings = get_current_settings()
-        return jsonify(
-            remaining=settings["plate_n_rows"] * settings["plate_n_cols"]
-            - count_samples_this_week()
-        )
+        return jsonify(remaining=remaining_samples_this_week())
 
     @app.route("/running_options", methods=["GET"])
     @jwt_required()
@@ -166,13 +162,13 @@ def create_app(data_path: str = "/circuit_seq_data"):
         running_option = request.form.to_dict().get("running_option", "")
         reference_sequence_file = request.files.to_dict().get("file", None)
         logger.info(f"Adding sample {name} from {email}")
-        new_sample = add_new_sample(
+        new_sample, error_message = add_new_sample(
             email, name, running_option, reference_sequence_file, data_path
         )
         if new_sample is not None:
             logger.info(f"  - > success")
             return jsonify(sample=new_sample)
-        return jsonify(message="No more samples available this week."), 401
+        return jsonify(message=error_message), 401
 
     @app.route("/admin/settings", methods=["GET", "POST"])
     @jwt_required()

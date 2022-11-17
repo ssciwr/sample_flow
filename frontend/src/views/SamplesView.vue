@@ -45,7 +45,6 @@ function update_remaining() {
   apiClient
     .get("remaining")
     .then((response) => {
-      console.log(response);
       remaining.value = response.data.remaining;
     })
     .catch((error) => {

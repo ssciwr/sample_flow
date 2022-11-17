@@ -22,10 +22,13 @@ apiClient.get("admin/allusers").then((response) => {
 });
 
 const settings = ref({} as Settings);
+const days = [1, 2, 3, 4, 5, 6, 7];
+const last_submission_day = ref(1);
 const new_running_option = ref("");
 const settings_message = ref("");
 apiClient.get("admin/settings").then((response) => {
   settings.value = response.data;
+  last_submission_day.value = settings.value.last_submission_day;
 });
 
 function add_running_option() {
@@ -56,6 +59,7 @@ const plate_range_string = computed(() => {
 });
 
 function save_settings() {
+  settings.value.last_submission_day = Number(last_submission_day.value);
   apiClient
     .post("admin/settings", settings.value)
     .then((response) => {
@@ -158,6 +162,14 @@ function save_settings() {
                 </form>
               </li>
             </ul>
+          </td>
+        </tr>
+        <tr>
+          <td>Last submission day (1=mon):</td>
+          <td>
+            <select v-model="last_submission_day">
+              <option v-for="day in days">{{ day }}</option>
+            </select>
           </td>
         </tr>
         <tr>
