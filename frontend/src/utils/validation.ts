@@ -9,4 +9,10 @@ function validate_password(password: string) {
   return re.test(password);
 }
 
-export { validate_email, validate_password };
+function validate_sample_name(sample_name: string) {
+  // only alphanumeric characters or underscores
+  const re = /^([A-Za-z0-9_]+)$/;
+  return re.test(sample_name);
+}
+
+export { validate_email, validate_password, validate_sample_name };
