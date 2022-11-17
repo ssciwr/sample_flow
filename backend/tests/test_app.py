@@ -1,11 +1,19 @@
 from typing import Dict
 import io
 import zipfile
+from freezegun import freeze_time
 
 
-def test_remaining(client):
+@freeze_time("2022-11-14")
+def test_remaining_mon(client):
     response = client.get("/remaining")
     assert response.json["remaining"] == 96
+
+
+@freeze_time("2022-11-19")
+def test_remaining_sat(client):
+    response = client.get("/remaining")
+    assert response.json["remaining"] == 0
 
 
 def _get_auth_headers(
@@ -90,6 +98,7 @@ def test_admin_settings_valid(client):
             "plate_n_rows": 14,
             "plate_n_cols": 18,
             "running_options": ["o1", "o2", "o3"],
+            "last_submission_day": 4,
         },
         headers=headers,
     )
@@ -99,6 +108,7 @@ def test_admin_settings_valid(client):
     assert response.json["plate_n_rows"] == 14
     assert response.json["plate_n_cols"] == 18
     assert response.json["running_options"] == ["o1", "o2", "o3"]
+    assert response.json["last_submission_day"] == 4
 
 
 def test_admin_allsamples_invalid(client):

@@ -30,7 +30,7 @@ dependencies = [
 circuit_seq_server = "circuit_seq_server.main:main"
 
 [project.optional-dependencies]
-tests = ["pytest", "pytest-cov"]
+tests = ["pytest", "pytest-cov", "freezegun"]
 docs = ["m2r2", "sphinx", "sphinx_rtd_theme"]
 
 [tool.setuptools.dynamic]
