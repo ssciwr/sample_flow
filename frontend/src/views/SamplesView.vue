@@ -2,24 +2,27 @@
 import { computed, ref } from "vue";
 import Item from "@/components/ListItem.vue";
 import { apiClient, download_reference_sequence } from "@/utils/api-client";
+import { validate_sample_name } from "@/utils/validation";
 import type { Sample, RunningOptions } from "@/utils/types";
 const new_sample_name = ref("");
 const selected_file = ref(null as null | Blob);
+const file_input_key = ref(0);
+const new_sample_error_message = ref("");
 
 function on_file_changed(event: Event) {
+  const max_upload_size_mb = 4;
   const target = event.target as HTMLInputElement;
   if (target.files != null && target.files.length > 0) {
     selected_file.value = target.files[0];
+    if (selected_file.value.size > 1024 * 1024 * max_upload_size_mb) {
+      selected_file.value = null;
+      file_input_key.value++;
+      window.alert(
+        `File is too large: maximum reference sequence file size is ${max_upload_size_mb}MB`
+      );
+    }
   } else {
     selected_file.value = null;
-  }
-  if (
-    selected_file.value != null &&
-    selected_file.value.size > 1024 * 1024 * 4
-  ) {
-    window.alert(
-      "File is too large: maximum reference sequence file size is 4MB"
-    );
   }
 }
 
@@ -27,21 +30,29 @@ function duplicate_sample_name(sample_name: string) {
   return current_samples.value.some((e) => e.name === sample_name);
 }
 
-function invalid_sample_name(sample_name: string) {
-  // only alphanumeric characters or underscores
-  const re = /^([A-Za-z0-9_]+)$/;
-  return !re.test(sample_name);
-}
-
 const new_sample_name_message = computed(() => {
   if (duplicate_sample_name(new_sample_name.value)) {
     return "Sample name already used";
-  } else if (invalid_sample_name(new_sample_name.value)) {
+  } else if (!validate_sample_name(new_sample_name.value)) {
     return "Only alphanumeric characters and underscores allowed";
   } else {
     return "";
   }
 });
+
+const remaining = ref(0);
+function update_remaining() {
+  apiClient
+    .get("remaining")
+    .then((response) => {
+      console.log(response);
+      remaining.value = response.data.remaining;
+    })
+    .catch((error) => {
+      console.log("Could not connect to server");
+    });
+}
+update_remaining();
 
 const current_samples = ref([] as Sample[]);
 const previous_samples = ref([] as Sample[]);
@@ -86,7 +97,12 @@ function add_sample() {
     })
     .then((response) => {
       current_samples.value.push(response.data.sample);
+      new_sample_error_message.value = "";
+    })
+    .catch((error) => {
+      new_sample_error_message.value = error.response.data.message;
     });
+  update_remaining();
   new_sample_name.value = "";
   selected_file.value = null;
 }
@@ -137,61 +153,81 @@ function add_sample() {
         <i class="bi-clipboard-plus"></i>
       </template>
       <template #heading>Submit a sample</template>
-      <p>
-        To submit a new sample, enter a sample name, and optionally upload a
-        fasta file containing a reference sequence:
-      </p>
-      <table>
-        <tr>
-          <td style="text-align: right">Sample name:</td>
-          <td>
-            <input
-              v-model="new_sample_name"
-              placeholder="pXYZ_ABC_c1"
-              maxlength="128"
-              :title="new_sample_name_message"
-            />
-          </td>
-          <td style="font-style: italic">
-            <template v-if="new_sample_name">
-              {{ new_sample_name_message }}
-            </template>
-          </td>
-        </tr>
-        <tr>
-          <td style="text-align: right">Running option:</td>
-          <td>
-            <select v-model="new_running_option">
-              <option v-for="running_option in running_options">
-                {{ running_option }}
-              </option>
-            </select>
-          </td>
-        </tr>
-        <tr>
-          <td style="text-align: right">Reference sequence (optional):</td>
-          <td>
-            <input
-              type="file"
-              name="file"
-              @change="on_file_changed($event)"
-              title="Optionally upload a fasta file reference sequence"
-            />
-          </td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>
-            <button
-              @click="add_sample"
-              :disabled="new_sample_name_message.length > 0"
-              :title="new_sample_name_message"
-            >
-              Request Sample
-            </button>
-          </td>
-        </tr>
-      </table>
+      <template v-if="remaining > 0">
+        <p>
+          To submit a new sample, enter a sample name, and optionally upload a
+          fasta file containing a reference sequence:
+        </p>
+        <table>
+          <tr>
+            <td style="text-align: right">Sample name:</td>
+            <td>
+              <input
+                v-model="new_sample_name"
+                placeholder="pXYZ_ABC_c1"
+                maxlength="128"
+                :title="new_sample_name_message"
+              />
+            </td>
+            <td style="font-style: italic">
+              <template v-if="new_sample_name">
+                {{ new_sample_name_message }}
+              </template>
+            </td>
+          </tr>
+          <tr>
+            <td style="text-align: right">Running option:</td>
+            <td>
+              <select v-model="new_running_option">
+                <option v-for="running_option in running_options">
+                  {{ running_option }}
+                </option>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <td style="text-align: right">Reference sequence (optional):</td>
+            <td>
+              <input
+                type="file"
+                name="file"
+                @change="on_file_changed($event)"
+                :key="file_input_key"
+                title="Optionally upload a fasta file reference sequence"
+              />
+            </td>
+          </tr>
+          <tr>
+            <td></td>
+            <td>
+              <button
+                @click="add_sample"
+                :disabled="new_sample_name_message.length > 0"
+                :title="new_sample_name_message"
+              >
+                Request Sample
+              </button>
+            </td>
+          </tr>
+          <tr>
+            <td style="font-style: italic" colspan="2">
+              <template v-if="new_sample_error_message">
+                {{ new_sample_error_message }}
+              </template>
+            </td>
+          </tr>
+        </table>
+      </template>
+      <template v-else>
+        <p>
+          No more samples available this week, please try again on Monday, or
+          email
+          <a href="mailto:e.green@dkfz.de?subject=circuitSEQ"
+            >e.green@dkfz.de</a
+          >
+          with urgent requests.
+        </p>
+      </template>
     </Item>
     <Item>
       <template #icon>

@@ -1,5 +1,9 @@
 import { expect, test } from "vitest";
-import { validate_password, validate_email } from "../validation";
+import {
+  validate_password,
+  validate_email,
+  validate_sample_name,
+} from "../validation";
 
 test.each([
   "",
@@ -35,3 +39,17 @@ test.each([
 ])("validate_email::valid %s", (valid_email) => {
   expect(validate_email(valid_email)).toBeTruthy();
 });
+
+test.each(["", "a@b.com", "as ds", "asd_qwer/asd"])(
+  "validate_sample_name::invalid %s",
+  (invalid_sample_name) => {
+    expect(validate_sample_name(invalid_sample_name)).toBeFalsy();
+  }
+);
+
+test.each(["zxcQWD234", "gf_asde_23958_QGHSD"])(
+  "validate_sample_name::valid %s",
+  (valid_sample_name) => {
+    expect(validate_sample_name(valid_sample_name)).toBeTruthy();
+  }
+);
