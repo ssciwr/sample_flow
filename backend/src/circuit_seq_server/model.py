@@ -1,12 +1,14 @@
 from __future__ import annotations
-from typing import Optional, Any, Dict, Tuple
+from typing import Optional, Dict, Tuple, List
 import re
+import zipfile
 import shutil
 import argon2
 import tempfile
 import pathlib
 import datetime
 from flask_sqlalchemy import SQLAlchemy
+from werkzeug.datastructures import FileStorage
 from dataclasses import dataclass
 from Bio import SeqIO
 from circuit_seq_server.logger import get_logger
@@ -83,6 +85,9 @@ class Sample(db.Model):
     reference_sequence_description: Optional[str] = db.Column(
         db.String(256), nullable=True
     )
+    has_results_fasta: bool = db.Column(db.Boolean, nullable=False)
+    has_results_gbk: bool = db.Column(db.Boolean, nullable=False)
+    has_results_zip: bool = db.Column(db.Boolean, nullable=False)
     date: datetime.date = db.Column(db.Date, nullable=False)
 
 
@@ -162,6 +167,58 @@ def update_samples_zipfile(
     )
     logger.info(f"  -> created zip file {zip_filename}")
     return zip_filename
+
+
+def _results_dir_and_key_from_filename(
+    filename: str, data_path: str
+) -> Tuple[str, str]:
+    segments = pathlib.Path(filename).name.split("_")
+    if len(segments) < 3:
+        return "", ""
+    yy = segments[0]
+    ww = segments[1]
+    nn = segments[2]
+    return f"{data_path}/20{yy}/{ww}/results", f"{yy}_{ww}_{nn}"
+
+
+def process_result(result_zip_file: FileStorage, data_path: str) -> Tuple[str, int]:
+    logger.info(f"Processing zip file {result_zip_file}")
+    results_dir, key = _results_dir_and_key_from_filename(
+        result_zip_file.filename, data_path
+    )
+    if results_dir == "":
+        logger.warn(f" --> Invalid filename")
+        return f"Invalid filename {result_zip_file.filename}", 401
+    sample = db.session.execute(
+        db.select(Sample).filter_by(primary_key=key)
+    ).scalar_one_or_none()
+    if sample is None:
+        logger.warn(f" --> Unknown primary key {key}")
+        return f"Unknown primary key {key}", 401
+    pathlib.Path(results_dir).mkdir(parents=True, exist_ok=True)
+    basename = f"{key}_{sample.name}"
+    results_file = pathlib.Path(results_dir) / f"{basename}.zip"
+    result_zip_file.save(results_file)
+    logger.info(f"  --> {results_file}")
+    sample.has_results_zip = True
+    try:
+        zip_file = zipfile.ZipFile(results_file)
+        for zip_info in zip_file.infolist():
+            if not zip_info.is_dir():
+                # remove any leading directories from filename in zip file
+                zip_info.filename = pathlib.Path(zip_info.filename).name
+                if zip_info.filename == f"{basename}.fasta":
+                    zip_file.extract(zip_info, results_dir)
+                    logger.info(f"  --> {results_dir}/{zip_info.filename}")
+                    sample.has_results_fasta = True
+                elif zip_info.filename == f"{basename}.gbk":
+                    zip_file.extract(zip_info, results_dir)
+                    logger.info(f"  --> {results_dir}/{zip_info.filename}")
+                    sample.has_results_gbk = True
+    except Exception as e:
+        logger.warn(f"Failed to process zip file: {e}")
+    db.session.commit()
+    return str(results_file), 200
 
 
 @dataclass
@@ -250,7 +307,7 @@ def add_new_sample(
     email: str,
     name: str,
     running_option: str,
-    reference_sequence_file: Optional[Any],
+    reference_sequence_file: Optional[FileStorage],
     data_path: str,
 ) -> Tuple[Optional[Sample], str]:
     today = datetime.date.today()
@@ -301,6 +358,9 @@ def add_new_sample(
         reference_sequence_description=reference_sequence_description,
         running_option=running_option,
         date=today,
+        has_results_zip=False,
+        has_results_fasta=False,
+        has_results_gbk=False,
     )
     db.session.add(new_sample)
     db.session.commit()
@@ -320,19 +380,30 @@ def _add_temporary_users_for_testing():
 def _add_temporary_samples_for_testing():
     # add temporary samples if not already in db
     running_option = get_current_settings()["running_options"][0]
-    for week in [43, 42, 40]:
-        for n in [1, 2, 3]:
-            key = f"22_{week}_A{n}"
-            if not db.session.execute(
-                db.select(Sample).filter(Sample.primary_key == key)
-            ).scalar_one_or_none():
-                new_sample = Sample(
-                    email="user@embl.de",
-                    name=f"builtin_test_sample{n}",
-                    primary_key=key,
-                    reference_sequence_description=None,
-                    running_option=running_option,
-                    date=datetime.date.fromisocalendar(2022, week, n),
-                )
-                db.session.add(new_sample)
-                db.session.commit()
+    week = 46
+    for n, name in zip(
+        [1, 2, 3, 4],
+        [
+            "no_ref_seq",
+            "ZIP_TEST_pMC_Final_Kan",
+            "ZIP_TEST_pCW571",
+            "ZIP_TEST_pDONR_amilCP",
+        ],
+    ):
+        key = f"22_{week}_A{n}"
+        if not db.session.execute(
+            db.select(Sample).filter(Sample.primary_key == key)
+        ).scalar_one_or_none():
+            new_sample = Sample(
+                email="user@embl.de",
+                name=name,
+                primary_key=key,
+                reference_sequence_description=None,
+                running_option=running_option,
+                date=datetime.date.fromisocalendar(2022, week, n),
+                has_results_zip=False,
+                has_results_fasta=False,
+                has_results_gbk=False,
+            )
+            db.session.add(new_sample)
+            db.session.commit()

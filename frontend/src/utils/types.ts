@@ -6,6 +6,9 @@ export type Sample = {
   running_option: string;
   reference_sequence_description: string | null;
   date: string;
+  has_results_zip: boolean;
+  has_results_fasta: boolean;
+  has_results_gbk: boolean;
 };
 
 export type User = {

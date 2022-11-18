@@ -1,6 +1,7 @@
 import circuit_seq_server.model as model
 import datetime
 from freezegun import freeze_time
+from werkzeug.datastructures import FileStorage
 
 
 def _count_settings() -> int:
@@ -52,7 +53,7 @@ def test_settings(app, tmp_path):
         assert new_settings["last_submission_day"] == 5
 
 
-@freeze_time("2022-11-14")
+@freeze_time("2022-11-21")
 def test_add_new_sample_mon(app, tmp_path):
     with app.app_context():
         current_date = datetime.date.today()
@@ -74,6 +75,9 @@ def test_add_new_sample_mon(app, tmp_path):
         assert new_sample.primary_key == f"{year%100}_{week}_A1"
         assert new_sample.date == current_date
         assert new_sample.reference_sequence_description is None
+        assert new_sample.has_results_zip is False
+        assert new_sample.has_results_fasta is False
+        assert new_sample.has_results_gbk is False
         samples = model.db.session.execute(this_week_samples).scalars().all()
         assert len(samples) == 1
         assert samples[0] == new_sample
@@ -81,7 +85,7 @@ def test_add_new_sample_mon(app, tmp_path):
         assert model.remaining_samples_this_week(current_date) == 95
 
 
-@freeze_time("2022-11-19")
+@freeze_time("2022-11-26")
 def test_add_new_sample_sat(app, tmp_path):
     with app.app_context():
         current_date = datetime.date.today()
@@ -106,7 +110,7 @@ def test_add_new_sample_sat(app, tmp_path):
         assert model._count_samples_this_week(current_date) == 1
 
 
-@freeze_time("2022-11-14")
+@freeze_time("2022-11-21")
 def test_add_new_sample_full(app, tmp_path):
     with app.app_context():
         current_date = datetime.date.today()
@@ -178,3 +182,18 @@ def test_add_new_user_valid(app):
         # check new password
         assert user.check_password(password) is False
         assert user.check_password("newPassword2") is True
+
+
+def test_process_result_valid(app, result_zipfiles, tmp_path):
+    with app.app_context():
+        for result_zipfile in result_zipfiles:
+            with open(result_zipfile, "rb") as f:
+                message, code = model.process_result(FileStorage(f), str(tmp_path))
+            assert code == 200
+            assert result_zipfile.name in message
+            results_dir = tmp_path / "2022/46/results"
+            assert results_dir.is_dir()
+            zip_path_on_server = results_dir / result_zipfile.name
+            assert zip_path_on_server.is_file()
+            assert zip_path_on_server.with_suffix(".fasta").is_file()
+            assert zip_path_on_server.with_suffix(".gbk").is_file()
