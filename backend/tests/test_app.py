@@ -2,6 +2,7 @@ from typing import Dict
 import io
 import zipfile
 from freezegun import freeze_time
+import pathlib
 
 
 @freeze_time("2022-11-14")
@@ -73,6 +74,103 @@ def test_running_options_valid(client):
     response = client.get("/running_options", headers=headers)
     assert response.status_code == 200
     assert "running_options" in response.json
+
+
+@freeze_time("2022-11-14")
+def test_addsample_mon_fasta(client, ref_seq_fasta):
+    headers = _get_auth_headers(client)
+    response = client.post(
+        "/addsample",
+        data={
+            "name": "abc",
+            "running_option": "r",
+            "file": (ref_seq_fasta, "test.fa"),
+        },
+        headers=headers,
+    )
+    assert response.status_code == 200
+    new_sample = response.json["sample"]
+    assert new_sample["email"] == "user@embl.de"
+    assert new_sample["name"] == "abc"
+    assert new_sample["primary_key"] == "22_46_A1"
+    assert new_sample["reference_sequence_description"] == "seq0"
+    assert new_sample["running_option"] == "r"
+    data_path = pathlib.Path(client.application.config.get("CIRCUITSEQ_DATA_PATH"))
+    fasta_path = data_path / "2022/46/inputs/references/22_46_A1_abc.fasta"
+    assert fasta_path.is_file()
+    with fasta_path.open() as f:
+        assert new_sample["reference_sequence_description"] in f.readline()
+
+
+@freeze_time("2022-11-14")
+def test_addsample_mon_fasta_invalid(client):
+    headers = _get_auth_headers(client)
+    response = client.post(
+        "/addsample",
+        data={
+            "name": "abc",
+            "running_option": "r",
+            "file": (io.BytesIO(b"invalid_fasta_contents"), "test.fa"),
+        },
+        headers=headers,
+    )
+    assert response.status_code == 401
+    assert response.json["message"] == "Failed to parse reference sequence file."
+    data_path = pathlib.Path(client.application.config.get("CIRCUITSEQ_DATA_PATH"))
+    fasta_path = data_path / "2022/46/inputs/references/22_46_A1_abc.fasta"
+    assert not fasta_path.is_file()
+
+
+@freeze_time("2022-11-14")
+def test_addsample_mon_embl(client, ref_seq_embl):
+    headers = _get_auth_headers(client)
+    response = client.post(
+        "/addsample",
+        data={
+            "name": "abc",
+            "running_option": "r",
+            "file": (ref_seq_embl, "test.embl"),
+        },
+        headers=headers,
+    )
+    assert response.status_code == 200
+    new_sample = response.json["sample"]
+    assert new_sample["email"] == "user@embl.de"
+    assert new_sample["name"] == "abc"
+    assert new_sample["primary_key"] == "22_46_A1"
+    assert new_sample["reference_sequence_description"] == "X56734.1"
+    assert new_sample["running_option"] == "r"
+    data_path = pathlib.Path(client.application.config.get("CIRCUITSEQ_DATA_PATH"))
+    fasta_path = data_path / "2022/46/inputs/references/22_46_A1_abc.fasta"
+    assert fasta_path.is_file()
+    with fasta_path.open() as f:
+        assert new_sample["reference_sequence_description"] in f.readline()
+
+
+@freeze_time("2022-11-14")
+def test_addsample_mon_genbank(client, ref_seq_genbank):
+    headers = _get_auth_headers(client)
+    response = client.post(
+        "/addsample",
+        data={
+            "name": "abc",
+            "running_option": "r",
+            "file": (ref_seq_genbank, "test.gbk"),
+        },
+        headers=headers,
+    )
+    assert response.status_code == 200
+    new_sample = response.json["sample"]
+    assert new_sample["email"] == "user@embl.de"
+    assert new_sample["name"] == "abc"
+    assert new_sample["primary_key"] == "22_46_A1"
+    assert new_sample["reference_sequence_description"] == "Z78533.1"
+    assert new_sample["running_option"] == "r"
+    data_path = pathlib.Path(client.application.config.get("CIRCUITSEQ_DATA_PATH"))
+    fasta_path = data_path / "2022/46/inputs/references/22_46_A1_abc.fasta"
+    assert fasta_path.is_file()
+    with fasta_path.open() as f:
+        assert new_sample["reference_sequence_description"] in f.readline()
 
 
 def test_admin_settings_invalid(client):

@@ -34,6 +34,7 @@ def create_app(data_path: str = "/circuit_seq_data"):
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{data_path}/CircuitSeq.db"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["MAX_CONTENT_LENGTH"] = 64 * 1000 * 1000  # 64mb max file upload
+    app.config["CIRCUITSEQ_DATA_PATH"] = data_path
 
     CORS(app)  # todo: limit ports / routes
 

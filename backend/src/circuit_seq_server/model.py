@@ -235,6 +235,17 @@ def add_new_user(
     )
 
 
+def _guess_seqio_format(filename: str):
+    ext = pathlib.Path(filename).suffix
+    if ext in [".gb", ".gbk"]:
+        return "genbank"
+    elif ext in [".dna"]:
+        return "snapgene"
+    elif ext in [".embl"]:
+        return "embl"
+    return "fasta"
+
+
 def add_new_sample(
     email: str,
     name: str,
@@ -264,23 +275,24 @@ def add_new_sample(
     if reference_sequence_file is not None:
         filename = f"{data_path}/{year}/{week}/inputs/references/{key}_{name}.fasta"
         with tempfile.TemporaryDirectory() as tmp_dir:
-            temp_file = pathlib.Path(tmp_dir) / "temp.fasta"
+            temp_file = pathlib.Path(tmp_dir) / "temp.txt"
             logger.info(
-                f"Saving {reference_sequence_file} to temporary file {temp_file}"
+                f"Saving {reference_sequence_file.filename} to temporary file {temp_file}"
             )
             reference_sequence_file.save(temp_file)
             try:
-                logger.info(f"Parsing fasta file")
-                record = next(SeqIO.parse(temp_file, "fasta").records)
+                seqio_format = _guess_seqio_format(reference_sequence_file.filename)
+                logger.info(f"Parsing file as {seqio_format}")
+                record = next(SeqIO.parse(temp_file, seqio_format).records)
                 logger.info(record.id)
                 logger.info(record.description)
                 logger.info(record.format("fasta"))
                 logger.info(f"Writing fasta file to {filename}")
                 SeqIO.write(record, filename, "fasta")
-                reference_sequence_description = record.description
+                reference_sequence_description = record.id
             except Exception as e:
-                logger.info(f"Failed to parse fasta file: {e}")
-                return None, "Failed to parse reference sequence fasta file."
+                logger.info(f"Failed to parse file: {e}")
+                return None, "Failed to parse reference sequence file."
 
     new_sample = Sample(
         email=email,
