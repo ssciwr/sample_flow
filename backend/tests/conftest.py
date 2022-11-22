@@ -1,6 +1,9 @@
 import pytest
 from circuit_seq_server import create_app
+from typing import List
 import io
+import os
+import pathlib
 
 
 @pytest.fixture()
@@ -13,6 +16,14 @@ def app(tmp_path):
 @pytest.fixture()
 def client(app):
     return app.test_client()
+
+
+@pytest.fixture()
+def result_zipfiles() -> List[pathlib.Path]:
+    results_path = (
+        pathlib.Path(os.path.dirname(os.path.abspath(__file__))) / "data" / "results"
+    )
+    return list(results_path.glob("*.zip"))
 
 
 @pytest.fixture()

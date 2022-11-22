@@ -40,8 +40,16 @@ function download_file_from_endpoint(
 function download_reference_sequence(primary_key: string) {
   download_file_from_endpoint(
     "reference_sequence",
-    { primary_key },
+    { primary_key: primary_key },
     `${primary_key}_reference_sequence.fasta`
+  );
+}
+
+function download_result(primary_key: string, filetype: string) {
+  download_file_from_endpoint(
+    "result",
+    { primary_key: primary_key, filetype: filetype },
+    `${primary_key}.${filetype}`
   );
 }
 
@@ -49,4 +57,9 @@ function download_zipsamples() {
   download_file_from_endpoint("admin/zipsamples", {}, "samples.zip");
 }
 
-export { apiClient, download_zipsamples, download_reference_sequence };
+export {
+  apiClient,
+  download_zipsamples,
+  download_reference_sequence,
+  download_result,
+};

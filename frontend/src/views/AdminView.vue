@@ -6,18 +6,32 @@ import {
   apiClient,
   download_zipsamples,
   download_reference_sequence,
+  download_result,
 } from "@/utils/api-client";
+
+function generate_api_token() {
+  apiClient.get("admin/token").then((response) => {
+    navigator.clipboard
+      .writeText(response.data.access_token)
+      .then(() => {
+        console.log("API token copied to clipboard");
+      })
+      .catch(() => {
+        console.log("Failed to copy API token to clipboard");
+      });
+  });
+}
 
 const current_samples = ref([] as Sample[]);
 const previous_samples = ref([] as Sample[]);
 
-apiClient.get("admin/allsamples").then((response) => {
+apiClient.get("admin/samples").then((response) => {
   current_samples.value = response.data.current_samples;
   previous_samples.value = response.data.previous_samples;
 });
 
 const users = ref([] as User[]);
-apiClient.get("admin/allusers").then((response) => {
+apiClient.get("admin/users").then((response) => {
   users.value = response.data.users;
 });
 
@@ -69,6 +83,28 @@ function save_settings() {
       settings_message.value = error.response.data.message;
     });
 }
+
+const upload_result_message = ref("");
+
+function upload_result(event: Event) {
+  const target = event.target as HTMLInputElement;
+  if (target.files != null && target.files.length > 0) {
+    let formData = new FormData();
+    formData.append("file", target.files[0]);
+    apiClient
+      .post("admin/result", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      })
+      .then((response) => {
+        upload_result_message.value = response.data.message;
+      })
+      .catch((error) => {
+        upload_result_message.value = error.response.data.message;
+      });
+  }
+}
 </script>
 
 <template>
@@ -113,6 +149,34 @@ function save_settings() {
         <a href="" @click.prevent="download_zipsamples()">
           Download as zipfile
         </a>
+      </p>
+    </Item>
+    <Item>
+      <template #icon>
+        <i class="bi-gear"></i>
+      </template>
+      <template #heading>Upload result</template>
+      <p>Upload a result zipfile:</p>
+      <p><input type="file" name="file" @change="upload_result($event)" /></p>
+      <p style="font-style: italic">
+        {{ upload_result_message }}
+      </p>
+    </Item>
+    <Item>
+      <template #icon>
+        <i class="bi-gear"></i>
+      </template>
+      <template #heading>Generate API Token</template>
+      <p>
+        Here you can generate an admin API token to interact programmatically
+        with the backend. Note this token should be kept secret! It is valid for
+        1 year (or until the backend is restarted), then you will need to
+        generate a new one.
+      </p>
+      <p>
+        <button @click="generate_api_token">
+          Generate API Token and copy to clipboard
+        </button>
       </p>
     </Item>
     <Item>
@@ -196,6 +260,7 @@ function save_settings() {
           <th>Sample Name</th>
           <th>Running Option</th>
           <th>Reference Sequence</th>
+          <th>Results</th>
         </tr>
         <tr v-for="sample in previous_samples" :key="sample.id">
           <td>{{ new Date(sample["date"]).toLocaleDateString("en-CA") }}</td>
@@ -215,6 +280,44 @@ function save_settings() {
               </a>
             </template>
             <template v-else> - </template>
+          </td>
+          <td>
+            <template
+              v-if="
+                !(
+                  sample.has_results_fasta ||
+                  sample.has_results_gbk ||
+                  sample.has_results_zip
+                )
+              "
+            >
+              -
+            </template>
+            <template v-else>
+              <template v-if="sample.has_results_fasta">
+                <a
+                  href=""
+                  @click.prevent="download_result(sample.primary_key, 'fasta')"
+                  >fasta</a
+                >
+                |
+              </template>
+              <template v-if="sample.has_results_gbk">
+                <a
+                  href=""
+                  @click.prevent="download_result(sample.primary_key, 'gbk')"
+                  >gbk</a
+                >
+                |
+              </template>
+              <template v-if="sample.has_results_zip">
+                <a
+                  href=""
+                  @click.prevent="download_result(sample.primary_key, 'zip')"
+                  >zip</a
+                >
+              </template>
+            </template>
           </td>
         </tr>
       </table>

@@ -23,6 +23,7 @@ from circuit_seq_server.model import (
     get_current_settings,
     set_current_settings,
     update_samples_zipfile,
+    process_result,
     _add_temporary_users_for_testing,
     _add_temporary_samples_for_testing,
 )
@@ -30,10 +31,14 @@ from circuit_seq_server.model import (
 
 def create_app(data_path: str = "/circuit_seq_data"):
     app = Flask("CircuitSeqServer")
+    # new secret key on server restart -> invalidates all existing tokens
     app.config["JWT_SECRET_KEY"] = secrets.token_urlsafe(64)
+    # tokens are by default valid for 30mins
+    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = datetime.timedelta(minutes=30)
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{data_path}/CircuitSeq.db"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    app.config["MAX_CONTENT_LENGTH"] = 64 * 1000 * 1000  # 64mb max file upload
+    # limit max file upload size to 64mb
+    app.config["MAX_CONTENT_LENGTH"] = 64 * 1024 * 1024
     app.config["CIRCUITSEQ_DATA_PATH"] = data_path
 
     CORS(app)  # todo: limit ports / routes
@@ -155,7 +160,45 @@ def create_app(data_path: str = "/circuit_seq_data"):
         logger.info(f"Returning fasta file {file}")
         return flask.send_file(file, as_attachment=True)
 
-    @app.route("/addsample", methods=["POST"])
+    @app.route("/result", methods=["POST"])
+    @jwt_required()
+    def result():
+        primary_key = request.json.get("primary_key", None)
+        filetype = request.json.get("filetype", None)
+        if filetype not in ["fasta", "gbk", "zip"]:
+            logger.info(f"  -> invalid filetype {filetype} requested")
+            return jsonify(f"Invalid filetype {filetype} requested"), 401
+        logger.info(
+            f"User {current_user.email} requesting {filetype} results for key {primary_key}"
+        )
+        filters = {"primary_key": primary_key}
+        if not current_user.is_admin:
+            filters["email"] = current_user.email
+        user_sample = db.session.execute(
+            db.select(Sample).filter_by(**filters)
+        ).scalar_one_or_none()
+        if user_sample is None:
+            logger.info(f"  -> sample with key {primary_key} not found")
+            return jsonify("Sample not found"), 401
+        if (
+            (filetype == "fasta" and not user_sample.has_results_fasta)
+            or (filetype == "gbk" and not user_sample.has_results_gbk)
+            or (filetype == "zip" and not user_sample.has_results_zip)
+        ):
+            logger.info(
+                f"  -> sample with key {primary_key} found but no {filetype} results available"
+            )
+            return jsonify(f"No {filetype} results available"), 401
+        year, week, day = user_sample.date.isocalendar()
+        filename = f"{data_path}/{year}/{week}/results/{user_sample.primary_key}_{user_sample.name}.{filetype}"
+        file = pathlib.Path(filename)
+        if not file.is_file():
+            logger.info(f"  -> {filetype} file {file} not found")
+            return jsonify(f"Results {filetype} file not found"), 401
+        logger.info(f"Returning {filetype} file {file}")
+        return flask.send_file(file, as_attachment=True)
+
+    @app.route("/sample", methods=["POST"])
     @jwt_required()
     def add_sample():
         email = current_user.email
@@ -182,7 +225,7 @@ def create_app(data_path: str = "/circuit_seq_data"):
         else:
             return get_current_settings()
 
-    @app.route("/admin/allsamples", methods=["GET"])
+    @app.route("/admin/samples", methods=["GET"])
     @jwt_required()
     def admin_all_samples():
         if not current_user.is_admin:
@@ -222,13 +265,34 @@ def create_app(data_path: str = "/circuit_seq_data"):
         zip_file = update_samples_zipfile(data_path, datetime.date.today())
         return flask.send_file(zip_file, as_attachment=True)
 
-    @app.route("/admin/allusers", methods=["GET"])
+    @app.route("/admin/users", methods=["GET"])
     @jwt_required()
-    def admin_all_users():
+    def admin_users():
         if current_user.is_admin:
             users = db.session.execute(db.select(User)).scalars().all()
             return jsonify(users=[user.as_dict() for user in users])
         return jsonify("Admin account required"), 401
+
+    @app.route("/admin/token", methods=["GET"])
+    @jwt_required()
+    def admin_token():
+        if current_user.is_admin:
+            access_token = create_access_token(
+                identity=current_user, expires_delta=datetime.timedelta(weeks=52)
+            )
+            return jsonify(access_token=access_token)
+        return jsonify("Admin account required"), 401
+
+    @app.route("/admin/result", methods=["POST"])
+    @jwt_required()
+    def admin_upload_result():
+        if not current_user.is_admin:
+            return jsonify("Admin account required"), 401
+        email = current_user.email
+        zipfile = request.files.to_dict().get("file", None)
+        logger.info(f"Results uploaded by {email}")
+        message, code = process_result(zipfile, data_path)
+        return jsonify(message=message), code
 
     with app.app_context():
         db.create_all()

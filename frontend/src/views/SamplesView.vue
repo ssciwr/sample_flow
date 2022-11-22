@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import Item from "@/components/ListItem.vue";
-import { apiClient, download_reference_sequence } from "@/utils/api-client";
+import {
+  apiClient,
+  download_reference_sequence,
+  download_result,
+} from "@/utils/api-client";
 import { validate_sample_name } from "@/utils/validation";
 import type { Sample, RunningOptions } from "@/utils/types";
 const new_sample_name = ref("");
@@ -89,7 +93,7 @@ function add_sample() {
     formData.append("file", selected_file.value);
   }
   apiClient
-    .post("addsample", formData, {
+    .post("sample", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
@@ -104,6 +108,7 @@ function add_sample() {
   update_remaining();
   new_sample_name.value = "";
   selected_file.value = null;
+  file_input_key.value++;
 }
 </script>
 
@@ -240,8 +245,9 @@ function add_sample() {
             <th>Date</th>
             <th>Primary Key</th>
             <th>Sample Name</th>
-            <td>Running Option</td>
+            <th>Running Option</th>
             <th>Reference Sequence</th>
+            <th>Results</th>
           </tr>
           <tr v-for="sample in previous_samples" :key="sample.id">
             <td>{{ new Date(sample["date"]).toLocaleDateString("en-CA") }}</td>
@@ -260,6 +266,46 @@ function add_sample() {
                 </a>
               </template>
               <template v-else> - </template>
+            </td>
+            <td>
+              <template
+                v-if="
+                  !(
+                    sample.has_results_fasta ||
+                    sample.has_results_gbk ||
+                    sample.has_results_zip
+                  )
+                "
+              >
+                -
+              </template>
+              <template v-else>
+                <template v-if="sample.has_results_fasta">
+                  <a
+                    href=""
+                    @click.prevent="
+                      download_result(sample.primary_key, 'fasta')
+                    "
+                    >fasta</a
+                  >
+                  |
+                </template>
+                <template v-if="sample.has_results_gbk">
+                  <a
+                    href=""
+                    @click.prevent="download_result(sample.primary_key, 'gbk')"
+                    >gbk</a
+                  >
+                  |
+                </template>
+                <template v-if="sample.has_results_zip">
+                  <a
+                    href=""
+                    @click.prevent="download_result(sample.primary_key, 'zip')"
+                    >zip</a
+                  >
+                </template>
+              </template>
             </td>
           </tr>
         </table>
