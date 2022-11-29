@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, Dict, Tuple, List
+from typing import Optional, Dict, Tuple
 import re
 import zipfile
 import shutil
@@ -10,10 +10,10 @@ import datetime
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.datastructures import FileStorage
 from dataclasses import dataclass
-from Bio import SeqIO
 from circuit_seq_server.logger import get_logger
-from circuit_seq_server.primary_key import get_primary_key
-from circuit_seq_server.date_utils import get_start_of_week
+from circuit_seq_server.utils import get_primary_key
+from circuit_seq_server.utils import get_start_of_week
+from circuit_seq_server.utils import parse_seq_to_fasta
 import csv
 
 db = SQLAlchemy()
@@ -292,17 +292,6 @@ def add_new_user(
     )
 
 
-def _guess_seqio_format(filename: str):
-    ext = pathlib.Path(filename).suffix
-    if ext in [".gb", ".gbk"]:
-        return "genbank"
-    elif ext in [".dna"]:
-        return "snapgene"
-    elif ext in [".embl"]:
-        return "embl"
-    return "fasta"
-
-
 def add_new_sample(
     email: str,
     name: str,
@@ -326,31 +315,21 @@ def add_new_sample(
     if key is None:
         return None, "No more samples left this week."
     reference_sequence_description: Optional[str] = None
-    pathlib.Path(f"{data_path}/{year}/{week}/inputs/references").mkdir(
-        parents=True, exist_ok=True
-    )
+    ref_seq_dir = pathlib.Path(f"{data_path}/{year}/{week}/inputs/references")
+    ref_seq_dir.mkdir(parents=True, exist_ok=True)
     if reference_sequence_file is not None:
-        filename = f"{data_path}/{year}/{week}/inputs/references/{key}_{name}.fasta"
+        ref_seq_filename = str(ref_seq_dir / f"{key}_{name}.fasta")
         with tempfile.TemporaryDirectory() as tmp_dir:
             temp_file = pathlib.Path(tmp_dir) / "temp.txt"
             logger.info(
                 f"Saving {reference_sequence_file.filename} to temporary file {temp_file}"
             )
             reference_sequence_file.save(temp_file)
-            try:
-                seqio_format = _guess_seqio_format(reference_sequence_file.filename)
-                logger.info(f"Parsing file as {seqio_format}")
-                record = next(SeqIO.parse(temp_file, seqio_format).records)
-                logger.info(record.id)
-                logger.info(record.description)
-                logger.info(record.format("fasta"))
-                logger.info(f"Writing fasta file to {filename}")
-                SeqIO.write(record, filename, "fasta")
-                reference_sequence_description = record.id
-            except Exception as e:
-                logger.info(f"Failed to parse file: {e}")
+            reference_sequence_description = parse_seq_to_fasta(
+                temp_file, ref_seq_filename, reference_sequence_file.filename
+            )
+            if reference_sequence_description is None:
                 return None, "Failed to parse reference sequence file."
-
     new_sample = Sample(
         email=email,
         name=name,

@@ -12,7 +12,7 @@ from flask_jwt_extended import jwt_required
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from circuit_seq_server.logger import get_logger
-from circuit_seq_server.date_utils import get_start_of_week
+from circuit_seq_server.utils import get_start_of_week
 from circuit_seq_server.model import (
     db,
     Sample,

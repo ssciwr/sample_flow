@@ -24,6 +24,7 @@ dependencies = [
   "click",
   "biopython",
   "gunicorn",
+  "snapgene_reader",
 ]
 
 [project.scripts]

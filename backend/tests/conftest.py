@@ -257,3 +257,16 @@ ORIGIN
 //
 """
     return io.BytesIO(gbk_str)
+
+
+@pytest.fixture()
+def ref_seq_snapgene() -> io.BytesIO:
+    # https://www.snapgene.com/resources/plasmid-files/?set=basic_cloning_vectors&plasmid=BlueScribe
+    with (
+        pathlib.Path(os.path.dirname(os.path.abspath(__file__)))
+        / "data"
+        / "sequences"
+        / "BlueScribe.dna"
+    ).open("rb") as f:
+        dna_bytes = io.BytesIO(f.read())
+    return dna_bytes
