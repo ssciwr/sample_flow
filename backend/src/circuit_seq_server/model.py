@@ -104,15 +104,22 @@ def _count_samples_this_week(current_date: datetime.date) -> int:
     return len(_samples_this_week(current_date))
 
 
-def remaining_samples_this_week(current_date: Optional[datetime.date] = None) -> int:
+def remaining_samples_this_week(
+    current_date: Optional[datetime.date] = None,
+) -> Dict:
     if current_date is None:
         current_date = datetime.date.today()
     settings = get_current_settings()
     year, week, day = current_date.isocalendar()
-    if day > settings["last_submission_day"]:
-        return 0
+    message = ""
     max_samples = settings["plate_n_rows"] * settings["plate_n_cols"]
-    return max_samples - _count_samples_this_week(current_date)
+    remaining = max_samples - _count_samples_this_week(current_date)
+    if day > settings["last_submission_day"]:
+        remaining = 0
+        message = "Sample submission is closed for this week."
+    elif remaining == 0:
+        message = "All samples have been taken this week."
+    return {"remaining": remaining, "message": message}
 
 
 def _write_samples_as_tsv_this_week(
@@ -275,6 +282,7 @@ def add_new_user(
                 "Password must contain at least 8 characters, including lower-case, upper-case and a number",
                 401,
             )
+
     # todo: check user doesn't already exist
     # todo: active should be false until they click on emailed activation link
     db.session.add(
@@ -303,8 +311,9 @@ def add_new_sample(
     year, week, day = today.isocalendar()
     count = _count_samples_this_week(today)
     settings = get_current_settings()
-    if day > settings["last_submission_day"]:
-        return None, "Sample submission is closed for this week."
+    remaining_samples = remaining_samples_this_week()
+    if remaining_samples["remaining"] == 0:
+        return None, remaining_samples["message"]
     key = get_primary_key(
         year=year,
         week=week,

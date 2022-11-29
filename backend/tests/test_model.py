@@ -61,7 +61,7 @@ def test_add_new_sample_mon(app, tmp_path):
             model.Sample.date >= current_date
         )
         assert model._count_samples_this_week(current_date) == 0
-        assert model.remaining_samples_this_week(current_date) == 96
+        assert model.remaining_samples_this_week(current_date)["remaining"] == 96
         # add a sample without a reference sequence
         new_sample, error_message = model.add_new_sample(
             "u1@embl.de", "s1", "running option", None, str(tmp_path)
@@ -82,7 +82,7 @@ def test_add_new_sample_mon(app, tmp_path):
         assert len(samples) == 1
         assert samples[0] == new_sample
         assert model._count_samples_this_week(current_date) == 1
-        assert model.remaining_samples_this_week(current_date) == 95
+        assert model.remaining_samples_this_week(current_date)["remaining"] == 95
 
 
 @freeze_time("2022-11-26")
@@ -90,6 +90,11 @@ def test_add_new_sample_sat(app, tmp_path):
     with app.app_context():
         current_date = datetime.date.today()
         assert model._count_samples_this_week(current_date) == 0
+        assert model.remaining_samples_this_week(current_date)["remaining"] == 0
+        assert (
+            model.remaining_samples_this_week(current_date)["message"]
+            == "Sample submission is closed for this week."
+        )
         # try to add a sample on a saturday
         new_sample, error_message = model.add_new_sample(
             "u1@embl.de", "s1", "running option", None, str(tmp_path)
@@ -97,10 +102,17 @@ def test_add_new_sample_sat(app, tmp_path):
         assert new_sample is None
         assert "closed" in error_message
         assert model._count_samples_this_week(current_date) == 0
+        assert model.remaining_samples_this_week(current_date)["remaining"] == 0
+        assert (
+            model.remaining_samples_this_week(current_date)["message"]
+            == "Sample submission is closed for this week."
+        )
         settings = model.get_current_settings()
         # make last submission day saturday
         settings["last_submission_day"] = 6
         model.set_current_settings("a@embl.de", settings)
+        assert model.remaining_samples_this_week(current_date)["remaining"] == 96
+        assert model.remaining_samples_this_week(current_date)["message"] == ""
         # try to add a sample on a saturday
         new_sample, error_message = model.add_new_sample(
             "u1@embl.de", "s1", "running option", None, str(tmp_path)
@@ -108,6 +120,8 @@ def test_add_new_sample_sat(app, tmp_path):
         assert new_sample is not None
         assert error_message == ""
         assert model._count_samples_this_week(current_date) == 1
+        assert model.remaining_samples_this_week(current_date)["remaining"] == 95
+        assert model.remaining_samples_this_week(current_date)["message"] == ""
 
 
 @freeze_time("2022-11-21")
@@ -119,19 +133,23 @@ def test_add_new_sample_full(app, tmp_path):
         settings["plate_n_cols"] = 1
         model.set_current_settings("a@embl.de", settings)
         assert model._count_samples_this_week(current_date) == 0
-        assert model.remaining_samples_this_week(current_date) == 1
+        assert model.remaining_samples_this_week(current_date)["remaining"] == 1
         new_sample, error_message = model.add_new_sample(
             "u1@embl.de", "s1", "running option", None, str(tmp_path)
         )
         assert new_sample is not None
         assert error_message == ""
         assert model._count_samples_this_week(current_date) == 1
-        assert model.remaining_samples_this_week(current_date) == 0
+        assert model.remaining_samples_this_week(current_date)["remaining"] == 0
+        assert (
+            model.remaining_samples_this_week(current_date)["message"]
+            == "All samples have been taken this week."
+        )
         new_sample, error_message = model.add_new_sample(
             "u1@embl.de", "s2", "running option", None, str(tmp_path)
         )
         assert new_sample is None
-        assert "samples left this week" in error_message
+        assert "samples have been taken this week" in error_message
 
 
 def _count_users() -> int:

@@ -101,7 +101,7 @@ def create_app(data_path: str = "/circuit_seq_data"):
 
     @app.route("/remaining", methods=["GET"])
     def remaining():
-        return jsonify(remaining=remaining_samples_this_week())
+        return remaining_samples_this_week()
 
     @app.route("/running_options", methods=["GET"])
     @jwt_required()

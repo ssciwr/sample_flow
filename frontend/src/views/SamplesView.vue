@@ -45,14 +45,17 @@ const new_sample_name_message = computed(() => {
 });
 
 const remaining = ref(0);
+const remaining_message = ref("");
 function update_remaining() {
   apiClient
     .get("remaining")
     .then((response) => {
       remaining.value = response.data.remaining;
+      remaining_message.value = response.data.message;
     })
     .catch((error) => {
-      console.log("Could not connect to server");
+      console.log(error);
+      remaining_message.value = "Error: could not connect to server";
     });
 }
 update_remaining();
@@ -224,8 +227,10 @@ function add_sample() {
       </template>
       <template v-else>
         <p>
-          No more samples available this week, please try again on Monday, or
-          email
+          {{ remaining_message }}
+        </p>
+        <p>
+          Please try again on Monday, or email
           <a href="mailto:e.green@dkfz.de?subject=circuitSEQ"
             >e.green@dkfz.de</a
           >
