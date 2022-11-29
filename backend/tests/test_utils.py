@@ -1,5 +1,6 @@
+from circuit_seq_server.utils import get_primary_key
 import datetime
-from circuit_seq_server.date_utils import get_start_of_week
+from circuit_seq_server.utils import get_start_of_week
 
 
 def test_get_start_of_week():
@@ -28,3 +29,13 @@ def test_get_start_of_week():
         assert year == 2022
         assert week == 45
         assert day == 1
+
+
+def test_primary_key_8_12():
+    rows = 8
+    cols = 12
+    year = 2022
+    assert get_primary_key(year, 1, 0, rows, cols) == "22_01_A1"
+    assert get_primary_key(year, 1, 1, rows, cols) == "22_01_A2"
+    assert get_primary_key(year, 1, 95, rows, cols) == "22_01_H12"
+    assert get_primary_key(year, 1, 96, rows, cols) is None
