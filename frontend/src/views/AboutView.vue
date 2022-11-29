@@ -3,11 +3,13 @@ import Item from "@/components/ListItem.vue";
 import { ref } from "vue";
 import { apiClient } from "@/utils/api-client";
 const remaining = ref(0);
+const remaining_message = ref("");
 apiClient
   .get("remaining")
   .then((response) => {
     console.log(response);
     remaining.value = response.data.remaining;
+    remaining_message.value = response.data.message;
   })
   .catch((error) => {
     console.log("Could not connect to server");
@@ -28,7 +30,12 @@ apiClient
       <ul>
         <li>Samples must be submitted by Wednesday each week.</li>
         <li>Results will be available on Friday.</li>
-        <li>Remaining available samples this week: {{ remaining }}.</li>
+        <template v-if="remaining_message">
+          <li>{{ remaining_message }} Please try again on Monday.</li>
+        </template>
+        <template v-else>
+          <li>Remaining available samples this week: {{ remaining }}.</li>
+        </template>
       </ul>
     </Item>
     <Item>
