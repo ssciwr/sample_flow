@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import os
 import secrets
 import pathlib
 import datetime
@@ -30,9 +32,18 @@ from circuit_seq_server.model import (
 
 
 def create_app(data_path: str = "/circuit_seq_data"):
+    logger = get_logger("CircuitSeqServer")
     app = Flask("CircuitSeqServer")
-    # new secret key on server restart -> invalidates all existing tokens
-    app.config["JWT_SECRET_KEY"] = secrets.token_urlsafe(64)
+    jwt_secret_key = os.environ.get("JWT_SECRET_KEY")
+    if jwt_secret_key is not None and len(jwt_secret_key) > 16:
+        logger.info("Setting JWT_SECRET_KEY from supplied env var")
+        app.config["JWT_SECRET_KEY"] = jwt_secret_key
+    else:
+        logger.warning(
+            "JWT_SECRET_KEY env var not set or too short: generating random secret key"
+        )
+        # new secret key -> invalidates any existing tokens
+        app.config["JWT_SECRET_KEY"] = secrets.token_urlsafe(64)
     # tokens are by default valid for 30mins
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = datetime.timedelta(minutes=30)
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{data_path}/CircuitSeq.db"
@@ -45,7 +56,6 @@ def create_app(data_path: str = "/circuit_seq_data"):
 
     jwt = JWTManager(app)
     db.init_app(app)
-    logger = get_logger("CircuitSeqServer")
 
     # https://flask-jwt-extended.readthedocs.io/en/stable/api/#flask_jwt_extended.JWTManager.user_identity_loader
     @jwt.user_identity_loader
@@ -278,7 +288,7 @@ def create_app(data_path: str = "/circuit_seq_data"):
     def admin_token():
         if current_user.is_admin:
             access_token = create_access_token(
-                identity=current_user, expires_delta=datetime.timedelta(weeks=52)
+                identity=current_user, expires_delta=datetime.timedelta(weeks=26)
             )
             return jsonify(access_token=access_token)
         return jsonify("Admin account required"), 401

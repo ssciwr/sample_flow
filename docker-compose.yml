@@ -7,6 +7,8 @@ services:
       - ${CIRCUIT_SEQ_DATA:-./docker_volume}:/circuit_seq_data
       - ${CIRCUIT_SEQ_SSL_CERT:-./cert.pem}:/circuit_seq_ssl_cert.pem
       - ${CIRCUIT_SEQ_SSL_KEY:-./key.pem}:/circuit_seq_ssl_key.pem
+    environment:
+      - JWT_SECRET_KEY=${CIRCUIT_SEQ_JWT_SECRET_KEY:-}
   frontend:
     build: ./frontend
     ports:

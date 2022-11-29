@@ -170,8 +170,7 @@ function upload_result(event: Event) {
       <p>
         Here you can generate an admin API token to interact programmatically
         with the backend. Note this token should be kept secret! It is valid for
-        1 year (or until the backend is restarted), then you will need to
-        generate a new one.
+        6 months, then you will need to generate a new one.
       </p>
       <p>
         <button @click="generate_api_token">

@@ -7,7 +7,8 @@ import pathlib
 
 
 @pytest.fixture()
-def app(tmp_path):
+def app(monkeypatch, tmp_path):
+    monkeypatch.setenv("JWT_SECRET_KEY", "abcdefghijklmnopqrstuvwxyz")
     temp_data_path = str(tmp_path)
     app = create_app(data_path=temp_data_path)
     yield app
