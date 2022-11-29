@@ -16,6 +16,12 @@ const router = createRouter({
       component: () => import("../views/LoginView.vue"),
     },
     {
+      path: "/activate/:activation_token",
+      name: "activate",
+      component: () => import("../views/ActivateView.vue"),
+      props: true,
+    },
+    {
       path: "/samples",
       name: "samples",
       component: () => import("../views/SamplesView.vue"),

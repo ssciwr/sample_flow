@@ -9,32 +9,29 @@ A work-in-progress prototype of the CircuitSEQ website.
 
 It is now running on a heiCLOUD VM here: https://circuitseq.iwr.uni-heidelberg.de/
 
-### Testing accounts
+You can sign up for a user account using any valid heidelberg/embl/dkfz email address.
 
-There are currently two built-in accounts for testing purposes:
-
-- admin account
-  - email: `admin@embl.de`
-  - password: `admin`
-- user account
-  - email: `user@embl.de`
-  - password: `user`
-
-You can also signup for a new account on the site (there is not yet an email account activation step, you can login straightaway after signup)
-
-### Implemented features
+## Implemented features
 
 - Users can
   - sign up with a valid email address
-  - request a sample, optionally providing a fasta reference sequence
-  - see a list of their requested samples & download the reference sequences
+  - request a sample, optionally providing a reference sequence
+  - see a list of their requested samples
+  - download their reference sequences
+  - download their results
 - Admins can
-  - see a list of all requested samples & download reference sequences
   - see a list of all users
+  - see a list of all requested samples
+  - change the site settings
+    - set which day of the week sample submission closes
+    - set number of plate rows/cols
+    - add/remove running options
+  - download a zipped tsv of this weeks requests including reference sequences as fasta files
+  - also do all of the above using a REST API
 
-### Notes
+## Notes
 
-- all uploaded samples and registered users will be deleted without warning as the prototype is updated!
+- currently all uploaded samples and registered users may be deleted without warning as the prototype is updated!
 
 ## Developer info
 

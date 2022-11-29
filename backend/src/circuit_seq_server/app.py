@@ -20,14 +20,13 @@ from circuit_seq_server.model import (
     Sample,
     User,
     add_new_user,
+    activate_user,
     add_new_sample,
     remaining_samples_this_week,
     get_current_settings,
     set_current_settings,
     update_samples_zipfile,
     process_result,
-    _add_temporary_users_for_testing,
-    _add_temporary_samples_for_testing,
 )
 
 
@@ -96,7 +95,12 @@ def create_app(data_path: str = "/circuit_seq_data"):
         email = request.json.get("email", None)
         password = request.json.get("password", None)
         logger.info(f"Signup request from {email}")
-        message, code = add_new_user(email, password)
+        message, code = add_new_user(email, password, False)
+        return jsonify(message=message), code
+
+    @app.route("/activate/<token>")
+    def activate(token: str):
+        message, code = activate_user(token)
         return jsonify(message=message), code
 
     @app.route("/remaining", methods=["GET"])
@@ -306,7 +310,5 @@ def create_app(data_path: str = "/circuit_seq_data"):
 
     with app.app_context():
         db.create_all()
-        _add_temporary_users_for_testing()
-        _add_temporary_samples_for_testing()
 
     return app

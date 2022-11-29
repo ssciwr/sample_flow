@@ -1,6 +1,9 @@
 from __future__ import annotations
 from typing import Optional, Dict, Tuple
+import smtplib
+from email.message import EmailMessage
 import re
+import flask
 import zipfile
 import shutil
 import argon2
@@ -15,6 +18,7 @@ from circuit_seq_server.utils import get_primary_key
 from circuit_seq_server.utils import get_start_of_week
 from circuit_seq_server.utils import parse_seq_to_fasta
 import csv
+from circuit_seq_server.utils import encode_activation_token, decode_activation_token
 
 db = SQLAlchemy()
 ph = argon2.PasswordHasher()
@@ -270,34 +274,83 @@ def is_valid_password(password: str) -> bool:
     return re.match(r"^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9]).{8,}$", password) is not None
 
 
-def add_new_user(
-    email: str, password: str, is_admin: bool = False, skip_validation: bool = False
-) -> Tuple[str, int]:
-    if not skip_validation:
-        # todo: remove this option when _add_temporary_users_for_testing() is removed
-        if not is_valid_email(email):
-            return "Please use a uni-heidelberg, dkfz or embl email address.", 401
-        if not is_valid_password(password):
-            return (
-                "Password must contain at least 8 characters, including lower-case, upper-case and a number",
-                401,
-            )
-
-    # todo: check user doesn't already exist
-    # todo: active should be false until they click on emailed activation link
-    db.session.add(
-        User(
-            email=email,
-            password_hash=ph.hash(password),
-            activated=True,
-            is_admin=is_admin,
-        )
+def _send_activation_email(email: str):
+    secret_key = flask.current_app.config["JWT_SECRET_KEY"]
+    token = encode_activation_token(email, secret_key)
+    url = f"https://circuitseq.iwr.uni-heidelberg.de/activate/{token}"
+    logger.info(f"Activation url: {url}")
+    msg = EmailMessage()
+    msg.set_content(
+        f"To activate your CircuitSEQ account, please confirm your email address by clicking on the following link:\n\n{url}"
     )
-    db.session.commit()
+    msg["Subject"] = "CircuitSEQ account activation"
+    msg["From"] = "no-reply@circuitseq.iwr.uni-heidelberg.de"
+    msg["To"] = email
+    with smtplib.SMTP("email:587") as s:
+        s.send_message(msg)
+
+
+def add_new_user(email: str, password: str, is_admin: bool) -> Tuple[str, int]:
+    if not is_valid_email(email):
+        return "Please use a uni-heidelberg, dkfz or embl email address.", 401
+    if not is_valid_password(password):
+        return (
+            "Password must contain at least 8 characters, including lower-case, upper-case and a number",
+            401,
+        )
+    if (
+        db.session.execute(
+            db.select(User).filter(User.email == email)
+        ).scalar_one_or_none()
+        is not None
+    ):
+        return (
+            "This email address is already in use",
+            401,
+        )
+    try:
+        _send_activation_email(email)
+    except Exception as e:
+        logger.warning(f"Send activation email failed: {e}")
+        return "Failed to send activation email", 401
+    try:
+        db.session.add(
+            User(
+                email=email,
+                password_hash=ph.hash(password),
+                activated=False,
+                is_admin=is_admin,
+            )
+        )
+        db.session.commit()
+    except Exception as e:
+        logger.warning(f"Error adding user to db: {e}")
+        return "Failed to create new user", 401
     return (
-        f"Successful signup for {email} [todo: please click on the activation link sent to this email address]",
+        f"Successful signup for {email}. To activate your account, please click on the link in the activation email from no-reply@circuitseq.iwr.uni-heidelberg.de sent to this email address",
         200,
     )
+
+
+def activate_user(token: str) -> Tuple[str, int]:
+    logger.info(f"Activate request for token {token}")
+    secret_key = flask.current_app.config["JWT_SECRET_KEY"]
+    email = decode_activation_token(token, secret_key)
+    if email is None:
+        return "Invalid or expired activation link", 401
+    logger.info(f"  -> email '{email}'")
+    user = db.session.execute(
+        db.select(User).filter(User.email == email)
+    ).scalar_one_or_none()
+    if user is None:
+        logger.info(f"  -> Unknown email address '{email}'")
+        return f"Unknown email address {email}", 401
+    if user.activated is True:
+        logger.info(f"  -> user with email {email} already activated")
+        return f"Account for {email} is already activated", 401
+    user.activated = True
+    db.session.commit()
+    return f"Account {email} activated", 200
 
 
 def add_new_sample(
@@ -353,45 +406,3 @@ def add_new_sample(
     db.session.add(new_sample)
     db.session.commit()
     return new_sample, ""
-
-
-def _add_temporary_users_for_testing():
-    # add temporary testing users if not already in db
-    for (name, is_admin) in [("admin", True), ("user", False)]:
-        email = f"{name}@embl.de"
-        if not db.session.execute(
-            db.select(User).filter(User.email == email)
-        ).scalar_one_or_none():
-            add_new_user(email, name, is_admin, skip_validation=True)
-
-
-def _add_temporary_samples_for_testing():
-    # add temporary samples if not already in db
-    running_option = get_current_settings()["running_options"][0]
-    week = 46
-    for n, name in zip(
-        [1, 2, 3, 4],
-        [
-            "no_ref_seq",
-            "ZIP_TEST_pMC_Final_Kan",
-            "ZIP_TEST_pCW571",
-            "ZIP_TEST_pDONR_amilCP",
-        ],
-    ):
-        key = f"22_{week}_A{n}"
-        if not db.session.execute(
-            db.select(Sample).filter(Sample.primary_key == key)
-        ).scalar_one_or_none():
-            new_sample = Sample(
-                email="user@embl.de",
-                name=name,
-                primary_key=key,
-                reference_sequence_description=None,
-                running_option=running_option,
-                date=datetime.date.fromisocalendar(2022, week, n),
-                has_results_zip=False,
-                has_results_fasta=False,
-                has_results_gbk=False,
-            )
-            db.session.add(new_sample)
-            db.session.commit()
