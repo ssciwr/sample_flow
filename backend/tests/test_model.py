@@ -1,3 +1,4 @@
+from __future__ import annotations
 import circuit_seq_server.model as model
 import datetime
 from freezegun import freeze_time
@@ -12,7 +13,7 @@ def _count_settings() -> int:
 
 def test_settings(app, tmp_path):
     with app.app_context():
-        assert _count_settings() == 1
+        assert _count_settings() == 0
         settings = model.get_current_settings()
         assert _count_settings() == 1
         assert settings["plate_n_rows"] == 8
@@ -174,6 +175,9 @@ def test_add_new_user_invalid(app):
             msg, code = model.add_new_user(email_valid, password, is_admin=False)
             assert code == 401
             assert "Password" in msg
+        msg, code = model.add_new_user("user@embl.de", password_valid, is_admin=False)
+        assert code == 401
+        assert msg == "This email address is already in use"
 
 
 def test_add_new_user_valid(app):
@@ -190,16 +194,28 @@ def test_add_new_user_valid(app):
         assert user is not None
         assert user.email == email
         assert user.is_admin is False
-        # check password
+        assert user.activated is False
+        email_msg = app.config["TESTING_ONLY_LAST_SMTP_MESSAGE"]
+        assert email_msg["To"] == email
+        # extract activation token from email contents
+        activation_token = email_msg.get_content().split("/")[-1].strip()
+        # check password pre-activation
         assert user.check_password("wrong") is False
         assert user.check_password(password) is True
+        # activate account with invalid token
+        model.activate_user("not_a_real_activation_token")
+        assert user.activated is False
+        model.activate_user(activation_token)
+        assert user.activated is True
         # set new password
         assert user.set_password("wrong", "new") is False
         assert user.check_password(password) is True
         assert user.set_password(password, "newPassword2") is True
+        assert user.activated is True
         # check new password
         assert user.check_password(password) is False
         assert user.check_password("newPassword2") is True
+        assert user.activated is True
 
 
 def test_process_result_valid(app, result_zipfiles, tmp_path):

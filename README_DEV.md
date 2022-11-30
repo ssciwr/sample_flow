@@ -30,11 +30,16 @@ To generate a cert/key pair:
 openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -sha256 -days 365 -nodes -subj '/CN=localhost'
 ```
 
+### Secret Key
+
+JWT tokens used for authentication are generated using a secret key.
+This can be set using the `CIRCUIT_SEQ_JWT_SECRET_KEY` environment variable.
+If this is not set or is less than 16 chars, a new random secret key is generated when the server starts.
+
 ### URL
 
 The website is then served at https://localhost/
-
-Note that these are self-signed keys and your browser will still warn about the site being insecure.
+Note that the SSK keys are self-signed keys and your browser will still warn about the site being insecure.
 
 ## Run locally with Python and npm
 
@@ -82,3 +87,28 @@ Both the backend and the frontend have a Dockerfile, and there is docker-compose
 
 Same as docker-compose but with additional `.env` and `frontend/.env.local` files
 to set location of database, cert/key pair from letsencrypt, and public url.
+
+### To deploy
+
+```
+cd circuit_seq
+# check current status
+sudo docker-compose ps
+# see current logs
+sudo docker-compose logs
+# update code
+git fetch && git pull
+# re-build & re-launch containers
+sudo docker-compose up --build -d
+```
+
+### Make admin users
+
+To make an existing user with email `user@embl.de` into an admin, ssh into the VM, then
+
+```
+cd circuit_seq
+sudo sqlite3 docker_volume/CircuitSeq.db
+sqlite> UPDATE user SET is_admin=true WHERE email='user@embl.de';
+sqlite> .quit
+```

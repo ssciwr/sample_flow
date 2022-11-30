@@ -1,16 +1,39 @@
+from __future__ import annotations
 import pytest
 from circuit_seq_server import create_app
 from typing import List
+import flask
 import io
 import os
+import sys
 import pathlib
+import smtplib
+
+# add tests helpers package location to path so tests can import gui_test_utils
+sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
+
+import flask_test_utils as ftu
 
 
 @pytest.fixture()
 def app(monkeypatch, tmp_path):
     monkeypatch.setenv("JWT_SECRET_KEY", "abcdefghijklmnopqrstuvwxyz")
+    monkeypatch.setattr(
+        smtplib.SMTP,
+        "__init__",
+        lambda self, host: print(f"Monkeypatched SMTP host: {host}", flush=True),
+    )
+    monkeypatch.setattr(
+        smtplib.SMTP,
+        "send_message",
+        lambda self, msg: flask.current_app.config.update(
+            TESTING_ONLY_LAST_SMTP_MESSAGE=msg
+        ),
+    )
     temp_data_path = str(tmp_path)
     app = create_app(data_path=temp_data_path)
+    ftu.add_test_users(app)
+    ftu.add_test_samples(app)
     yield app
 
 

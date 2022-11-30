@@ -25,6 +25,7 @@ dependencies = [
   "biopython",
   "gunicorn",
   "snapgene_reader",
+  "itsdangerous",
 ]
 
 [project.scripts]

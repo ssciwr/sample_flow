@@ -1,9 +1,11 @@
+from __future__ import annotations
 from typing import Dict
 import io
 import zipfile
 from freezegun import freeze_time
 import pathlib
 import circuit_seq_server
+import flask_test_utils as ftu
 
 
 @freeze_time("2022-11-21")
@@ -53,10 +55,11 @@ def test_login_valid(client):
 def test_jwt_same_secret_persists_valid_tokens(tmp_path, monkeypatch):
     monkeypatch.setenv("JWT_SECRET_KEY", "0123456789abcdefghijklmnopqrstuvwxyz")
     app1 = circuit_seq_server.create_app(data_path=str(tmp_path))
+    ftu.add_test_users(app1)
     client1 = app1.test_client()
     headers1 = _get_auth_headers(client1)
     assert client1.get("/samples", headers=headers1).status_code == 200
-    # create new app with same JWT secret key
+    # create new app with same JWT secret key & user database
     app2 = circuit_seq_server.create_app(data_path=str(tmp_path))
     client2 = app2.test_client()
     # can re-use the same JWT token in the new app
@@ -66,10 +69,11 @@ def test_jwt_same_secret_persists_valid_tokens(tmp_path, monkeypatch):
 def test_jwt_different_secret_invalidates_tokens(tmp_path, monkeypatch):
     monkeypatch.setenv("JWT_SECRET_KEY", "")  # too short: uses random one instead
     app1 = circuit_seq_server.create_app(data_path=str(tmp_path))
+    ftu.add_test_users(app1)
     client1 = app1.test_client()
     headers1 = _get_auth_headers(client1)
     assert client1.get("/samples", headers=headers1).status_code == 200
-    # create new app with a different JWT secret key
+    # create new app with a different JWT secret key & user database
     monkeypatch.setenv("JWT_SECRET_KEY", "")  # too short: uses random one instead
     app2 = circuit_seq_server.create_app(data_path=str(tmp_path))
     client2 = app2.test_client()

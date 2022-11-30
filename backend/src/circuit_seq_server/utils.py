@@ -7,8 +7,25 @@ import string
 import math
 from Bio import SeqIO
 import snapgene_reader
+from itsdangerous.url_safe import URLSafeSerializer
 
 logger = get_logger("CircuitSeqServer")
+
+
+def encode_activation_token(email: str, secret_key: str) -> str:
+    ss = URLSafeSerializer(secret_key, salt="activate")
+    return ss.dumps(email)
+
+
+def decode_activation_token(token: str, secret_key: str) -> Optional[str]:
+    ss = URLSafeSerializer(secret_key, salt="activate")
+    one_week_in_secs = 60 * 60 * 24 * 7
+    try:
+        email = ss.loads(token, max_age=one_week_in_secs)
+    except Exception as e:
+        logger.warn(f"Invalid or expired activation token: {e}")
+        return None
+    return email
 
 
 def get_start_of_week(current_date: Optional[datetime.date] = None) -> datetime.date:

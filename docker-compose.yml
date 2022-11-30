@@ -17,3 +17,7 @@ services:
     volumes:
       - ${CIRCUIT_SEQ_SSL_CERT:-./cert.pem}:/circuit_seq_ssl_cert.pem
       - ${CIRCUIT_SEQ_SSL_KEY:-./key.pem}:/circuit_seq_ssl_key.pem
+  email:
+    image: "boky/postfix"
+    environment:
+      - ALLOW_EMPTY_SENDER_DOMAINS="true"

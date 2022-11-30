@@ -1,3 +1,4 @@
+from __future__ import annotations
 from circuit_seq_server.utils import get_primary_key
 import datetime
 from circuit_seq_server.utils import get_start_of_week
