@@ -27,7 +27,8 @@ You can sign up for a user account using any valid heidelberg/embl/dkfz email ad
     - set number of plate rows/cols
     - add/remove running options
   - download a zipped tsv of this weeks requests including reference sequences as fasta files
-  - also do all of the above using a REST API
+  - upload a zipfile with analysis results for a sample
+  - also do all of the above using a REST API (see [api_examples.ipynb](https://github.com/ssciwr/circuit_seq/blob/main/notebooks/api_examples.ipynb))
 
 ## Notes
 
