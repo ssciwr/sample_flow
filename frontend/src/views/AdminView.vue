@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Item from "@/components/ListItem.vue";
+import ListItem from "@/components/ListItem.vue";
 import { ref, computed } from "vue";
 import type { Sample, User, Settings } from "@/utils/types";
 import {
@@ -109,11 +109,7 @@ function upload_result(event: Event) {
 
 <template>
   <main>
-    <Item>
-      <template #icon>
-        <i class="bi-gear"></i>
-      </template>
-      <template #heading>Samples this week</template>
+    <ListItem title="Samples this week" icon="bi-gear">
       <p>{{ current_samples.length }} samples have been requested so far:</p>
       <table class="zebra">
         <tr>
@@ -150,23 +146,15 @@ function upload_result(event: Event) {
           Download as zipfile
         </a>
       </p>
-    </Item>
-    <Item>
-      <template #icon>
-        <i class="bi-gear"></i>
-      </template>
-      <template #heading>Upload result</template>
+    </ListItem>
+    <ListItem title="Upload result" icon="bi-gear">
       <p>Upload a result zipfile:</p>
       <p><input type="file" name="file" @change="upload_result($event)" /></p>
       <p style="font-style: italic">
         {{ upload_result_message }}
       </p>
-    </Item>
-    <Item>
-      <template #icon>
-        <i class="bi-gear"></i>
-      </template>
-      <template #heading>Generate API Token</template>
+    </ListItem>
+    <ListItem title="Generate API Token" icon="bi-gear">
       <p>
         Here you can generate an admin API token to interact programmatically
         with the backend. Note this token should be kept secret! It is valid for
@@ -177,12 +165,8 @@ function upload_result(event: Event) {
           Generate API Token and copy to clipboard
         </button>
       </p>
-    </Item>
-    <Item>
-      <template #icon>
-        <i class="bi-gear"></i>
-      </template>
-      <template #heading>Settings</template>
+    </ListItem>
+    <ListItem title="Settings" icon="bi-gear">
       <table>
         <tr>
           <td>Plate num rows:</td>
@@ -245,12 +229,8 @@ function upload_result(event: Event) {
       <p style="font-style: italic">
         {{ settings_message }}
       </p>
-    </Item>
-    <Item>
-      <template #icon>
-        <i class="bi-gear"></i>
-      </template>
-      <template #heading>Previous samples</template>
+    </ListItem>
+    <ListItem title="Previous samples" icon="bi-gear">
       <table class="zebra">
         <tr>
           <th>Date</th>
@@ -320,12 +300,8 @@ function upload_result(event: Event) {
           </td>
         </tr>
       </table>
-    </Item>
-    <Item>
-      <template #icon>
-        <i class="bi-gear"></i>
-      </template>
-      <template #heading>Users</template>
+    </ListItem>
+    <ListItem title="Users" icon="bi-gear">
       <p>{{ users.length }} registered users:</p>
       <table class="zebra">
         <tr>
@@ -341,6 +317,6 @@ function upload_result(event: Event) {
           <td>{{ user["is_admin"] }}</td>
         </tr>
       </table>
-    </Item>
+    </ListItem>
   </main>
 </template>

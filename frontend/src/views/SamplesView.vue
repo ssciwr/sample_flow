@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import Item from "@/components/ListItem.vue";
+import ListItem from "@/components/ListItem.vue";
 import {
   apiClient,
   download_reference_sequence,
@@ -117,11 +117,7 @@ function add_sample() {
 
 <template>
   <main>
-    <Item>
-      <template #icon>
-        <i class="bi-clipboard-data"></i>
-      </template>
-      <template #heading>My samples</template>
+    <ListItem title="My samplesp" icon="bi-clipboard-data">
       <template v-if="current_samples.length > 0">
         <p>Your samples for this week:</p>
         <table class="zebra">
@@ -154,12 +150,8 @@ function add_sample() {
       <template v-else>
         <p>You don't have any samples this week.</p>
       </template>
-    </Item>
-    <Item>
-      <template #icon>
-        <i class="bi-clipboard-plus"></i>
-      </template>
-      <template #heading>Submit a sample</template>
+    </ListItem>
+    <ListItem title="Submit a sample" icon="bi-clipboard-plus">
       <template v-if="remaining > 0">
         <p>
           To submit a new sample, enter a sample name, and optionally upload a
@@ -237,12 +229,8 @@ function add_sample() {
           with urgent requests.
         </p>
       </template>
-    </Item>
-    <Item>
-      <template #icon>
-        <i class="bi-clipboard-data"></i>
-      </template>
-      <template #heading>Results</template>
+    </ListItem>
+    <ListItem title="Results" icon="bi-clipboard-data">
       <template v-if="previous_samples.length > 0">
         <p>Results from your previous samples:</p>
         <table class="zebra">
@@ -318,6 +306,6 @@ function add_sample() {
       <template v-else>
         <p>No previous samples.</p>
       </template>
-    </Item>
+    </ListItem>
   </main>
 </template>

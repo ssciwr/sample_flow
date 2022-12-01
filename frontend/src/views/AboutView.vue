@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Item from "@/components/ListItem.vue";
+import ListItem from "@/components/ListItem.vue";
 import { ref } from "vue";
 import { apiClient } from "@/utils/api-client";
 const remaining = ref(0);
@@ -18,11 +18,7 @@ apiClient
 
 <template>
   <main>
-    <Item>
-      <template #icon>
-        <i class="bi-lightbulb"></i>
-      </template>
-      <template #heading>About</template>
+    <ListItem title="About" icon="bi-lightbulb">
       <p>
         The CircuitSEQ project is a trial service offering sequencing of DNA
         samples.
@@ -37,37 +33,25 @@ apiClient
           <li>Remaining available samples this week: {{ remaining }}.</li>
         </template>
       </ul>
-    </Item>
-    <Item>
-      <template #icon>
-        <i class="bi-chat"></i>
-      </template>
-      <template #heading>Feedback</template>
+    </ListItem>
+    <ListItem title="Feedback" icon="bi-chat">
       Questions or feedback about this service are welcome at
       <a href="mailto:e.green@dkfz.de?subject=circuitSEQ">e.green@dkfz.de</a>
-    </Item>
-    <Item>
-      <template #icon>
-        <i class="bi-book"></i>
-      </template>
-      <template #heading>References</template>
+    </ListItem>
+    <ListItem title="References" icon="bi-book">
       This software implements a variant of the Circuit-seq method published by
       the McKenna lab:
       <a href="https://pubs.acs.org/doi/pdf/10.1021/acssynbio.2c00126"
         >ACS Synth. Biol. 2022, 11, 2238−2246</a
       >
-    </Item>
-    <Item>
-      <template #icon>
-        <i class="bi-info-circle"></i>
-      </template>
-      <template #heading>Funding</template>
+    </ListItem>
+    <ListItem title="Funding" icon="bi-info-circle">
       This work was funded by the
       <a href="https://www.health-life-sciences.de/?lang=de"
         >Heidelberg Mannheim Life Sciences alliance</a
       >
       through an 'Explore!Tech' grant awarded to Drs Ed Green, Liam Keegan and
       Kim Remans.
-    </Item>
+    </ListItem>
   </main>
 </template>
