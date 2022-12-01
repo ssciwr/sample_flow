@@ -1,12 +1,15 @@
+<script setup lang="ts">
+defineProps({
+  title: String,
+  icon: String,
+});
+</script>
+
 <template>
   <div class="item">
-    <i>
-      <slot name="icon"></slot>
-    </i>
+    <i :class="icon"></i>
     <div class="details">
-      <h3>
-        <slot name="heading"></slot>
-      </h3>
+      <h3>{{ title }}</h3>
       <slot></slot>
     </div>
   </div>

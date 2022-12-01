@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Item from "@/components/ListItem.vue";
+import ListItem from "@/components/ListItem.vue";
 import { ref, computed } from "vue";
 import { useUserStore } from "@/stores/user";
 import { apiClient } from "@/utils/api-client";
@@ -65,11 +65,7 @@ function do_signup() {
 
 <template>
   <main>
-    <Item>
-      <template #icon>
-        <i class="bi-person"></i>
-      </template>
-      <template #heading>My account</template>
+    <ListItem title="My account" icon="bi-person">
       <template v-if="userStore.user !== null">
         <p>You are currently logged in as:</p>
         <p class="purple">{{ userStore.user.email }}</p>
@@ -121,12 +117,12 @@ function do_signup() {
           </table>
         </form>
       </template>
-    </Item>
-    <Item v-if="userStore.user === null">
-      <template #icon>
-        <i class="bi-person-plus"></i>
-      </template>
-      <template #heading>Sign up</template>
+    </ListItem>
+    <ListItem
+      title="Sign up"
+      icon="bi-person-plus"
+      v-if="userStore.user === null"
+    >
       <p>
         If you don't yet have an account, you can create one by entering your
         Heidelberg Uni, EMBL or DKFZ email address and choosing a password:
@@ -181,6 +177,6 @@ function do_signup() {
       <p style="font-style: italic">
         {{ signup_response_message }}
       </p>
-    </Item>
+    </ListItem>
   </main>
 </template>
