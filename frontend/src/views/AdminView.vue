@@ -1,13 +1,9 @@
 <script setup lang="ts">
 import ListItem from "@/components/ListItem.vue";
+import SamplesTable from "@/components/SamplesTable.vue";
 import { ref, computed } from "vue";
 import type { Sample, User, Settings } from "@/utils/types";
-import {
-  apiClient,
-  download_zipsamples,
-  download_reference_sequence,
-  download_result,
-} from "@/utils/api-client";
+import { apiClient, download_zipsamples } from "@/utils/api-client";
 
 function generate_api_token() {
   apiClient.get("admin/token").then((response) => {
@@ -111,36 +107,7 @@ function upload_result(event: Event) {
   <main>
     <ListItem title="Samples this week" icon="bi-gear">
       <p>{{ current_samples.length }} samples have been requested so far:</p>
-      <table class="zebra">
-        <tr>
-          <th>Date</th>
-          <th>Primary Key</th>
-          <th>Email</th>
-          <th>Sample Name</th>
-          <th>Running Option</th>
-          <th>Reference Sequence</th>
-        </tr>
-        <tr v-for="sample in current_samples" :key="sample.id">
-          <td>{{ new Date(sample["date"]).toLocaleDateString("en-CA") }}</td>
-          <td>{{ sample["primary_key"] }}</td>
-          <td>{{ sample["email"] }}</td>
-          <td>{{ sample["name"] }}</td>
-          <td>{{ sample["running_option"] }}</td>
-          <td>
-            <template v-if="sample['reference_sequence_description']">
-              <a
-                href=""
-                @click.prevent="
-                  download_reference_sequence(sample['primary_key'])
-                "
-              >
-                {{ sample["reference_sequence_description"] }}
-              </a>
-            </template>
-            <template v-else> - </template>
-          </td>
-        </tr>
-      </table>
+      <SamplesTable :samples="current_samples"></SamplesTable>
       <p>
         <a href="" @click.prevent="download_zipsamples()">
           Download as zipfile
@@ -231,75 +198,7 @@ function upload_result(event: Event) {
       </p>
     </ListItem>
     <ListItem title="Previous samples" icon="bi-gear">
-      <table class="zebra">
-        <tr>
-          <th>Date</th>
-          <th>Primary Key</th>
-          <th>Email</th>
-          <th>Sample Name</th>
-          <th>Running Option</th>
-          <th>Reference Sequence</th>
-          <th>Results</th>
-        </tr>
-        <tr v-for="sample in previous_samples" :key="sample.id">
-          <td>{{ new Date(sample["date"]).toLocaleDateString("en-CA") }}</td>
-          <td>{{ sample["primary_key"] }}</td>
-          <td>{{ sample["email"] }}</td>
-          <td>{{ sample["name"] }}</td>
-          <td>{{ sample["running_option"] }}</td>
-          <td>
-            <template v-if="sample['reference_sequence_description']">
-              <a
-                href=""
-                @click.prevent="
-                  download_reference_sequence(sample['primary_key'])
-                "
-              >
-                {{ sample["reference_sequence_description"] }}
-              </a>
-            </template>
-            <template v-else> - </template>
-          </td>
-          <td>
-            <template
-              v-if="
-                !(
-                  sample.has_results_fasta ||
-                  sample.has_results_gbk ||
-                  sample.has_results_zip
-                )
-              "
-            >
-              -
-            </template>
-            <template v-else>
-              <template v-if="sample.has_results_fasta">
-                <a
-                  href=""
-                  @click.prevent="download_result(sample.primary_key, 'fasta')"
-                  >fasta</a
-                >
-                |
-              </template>
-              <template v-if="sample.has_results_gbk">
-                <a
-                  href=""
-                  @click.prevent="download_result(sample.primary_key, 'gbk')"
-                  >gbk</a
-                >
-                |
-              </template>
-              <template v-if="sample.has_results_zip">
-                <a
-                  href=""
-                  @click.prevent="download_result(sample.primary_key, 'zip')"
-                  >zip</a
-                >
-              </template>
-            </template>
-          </td>
-        </tr>
-      </table>
+      <SamplesTable :samples="previous_samples"></SamplesTable>
     </ListItem>
     <ListItem title="Users" icon="bi-gear">
       <p>{{ users.length }} registered users:</p>

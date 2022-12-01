@@ -41,6 +41,12 @@ If this is not set or is less than 16 chars, a new random secret key is generate
 The website is then served at https://localhost/
 Note that the SSK keys are self-signed keys and your browser will still warn about the site being insecure.
 
+### User signup activation email
+
+When you sign up for an account when running locally it will send an email (if port 25 is open) to whatever address you use.
+If the port is blocked you can see the activation_token in the docker logs, and activate your local account by going to https://localhost/activate/activation_token_from_logs
+To make yourself an admin user, see the production deployment section below.
+
 ## Run locally with Python and npm
 
 Clone the repo:
@@ -88,7 +94,7 @@ Both the backend and the frontend have a Dockerfile, and there is docker-compose
 Same as docker-compose but with additional `.env` and `frontend/.env.local` files
 to set location of database, cert/key pair from letsencrypt, and public url.
 
-### To deploy
+### To deploy on the VM
 
 ```
 cd circuit_seq
@@ -102,7 +108,7 @@ git fetch && git pull
 sudo docker-compose up --build -d
 ```
 
-### Make admin users
+### Give users admin rights
 
 To make an existing user with email `user@embl.de` into an admin, ssh into the VM, then
 
