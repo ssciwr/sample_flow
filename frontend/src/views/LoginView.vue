@@ -86,31 +86,40 @@ function do_signup() {
       </template>
       <template v-else>
         <p>Log in with the email address and password you used to sign up:</p>
-        <table>
-          <tr>
-            <td style="text-align: right">Email:</td>
-            <td>
-              <input
-                v-model="login_email_address"
-                placeholder="your.name@uni-heidelberg.de"
-                maxlength="256"
-              />
-            </td>
-          </tr>
-          <tr>
-            <td style="text-align: right">Password:</td>
-            <td>
-              <input v-model="login_password" type="password" maxlength="256" />
-            </td>
-            <td>{{ login_error_message }}</td>
-          </tr>
-          <tr>
-            <td></td>
-            <td>
-              <button @click="do_login">Login</button>
-            </td>
-          </tr>
-        </table>
+        <form @submit.prevent="do_login">
+          <table>
+            <tr>
+              <td style="text-align: right">Email:</td>
+              <td>
+                <input
+                  v-model="login_email_address"
+                  placeholder="your.name@uni-heidelberg.de"
+                  maxlength="256"
+                />
+              </td>
+            </tr>
+            <tr>
+              <td style="text-align: right">Password:</td>
+              <td>
+                <input
+                  v-model="login_password"
+                  type="password"
+                  maxlength="256"
+                />
+              </td>
+            </tr>
+            <tr>
+              <td></td>
+              <td style="font-style: italic">{{ login_error_message }}</td>
+            </tr>
+            <tr>
+              <td></td>
+              <td>
+                <input type="submit" />
+              </td>
+            </tr>
+          </table>
+        </form>
       </template>
     </Item>
     <Item v-if="userStore.user === null">
@@ -122,51 +131,53 @@ function do_signup() {
         If you don't yet have an account, you can create one by entering your
         Heidelberg Uni, EMBL or DKFZ email address and choosing a password:
       </p>
-      <table>
-        <tr>
-          <td style="text-align: right">Email:</td>
-          <td>
-            <input
-              v-model="signup_email_address"
-              placeholder="your.name@uni-heidelberg.de"
-              :title="signup_email_address_message"
-              maxlength="256"
-            />
-          </td>
-          <td style="font-style: italic">{{ signup_email_address_message }}</td>
-        </tr>
-        <tr>
-          <td style="text-align: right">Password:</td>
-          <td>
-            <input
-              v-model="signup_password"
-              type="password"
-              placeholder="password"
-              :title="signup_password_message"
-              maxlength="256"
-            />
-          </td>
-          <td style="font-style: italic">{{ signup_password_message }}</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>
-            <button
-              @click="do_signup"
-              :title="
-                signup_email_address_message + ' ' + signup_password_message
-              "
-              :disabled="
-                signup_email_address_message.length +
-                  signup_password_message.length >
-                0
-              "
-            >
-              Sign up
-            </button>
-          </td>
-        </tr>
-      </table>
+      <form @submit.prevent="do_signup">
+        <table>
+          <tr>
+            <td style="text-align: right">Email:</td>
+            <td>
+              <input
+                v-model="signup_email_address"
+                placeholder="your.name@uni-heidelberg.de"
+                :title="signup_email_address_message"
+                maxlength="256"
+              />
+            </td>
+            <td style="font-style: italic">
+              {{ signup_email_address_message }}
+            </td>
+          </tr>
+          <tr>
+            <td style="text-align: right">Password:</td>
+            <td>
+              <input
+                v-model="signup_password"
+                type="password"
+                placeholder="password"
+                :title="signup_password_message"
+                maxlength="256"
+              />
+            </td>
+            <td style="font-style: italic">{{ signup_password_message }}</td>
+          </tr>
+          <tr>
+            <td></td>
+            <td>
+              <input
+                type="submit"
+                :title="
+                  signup_email_address_message + ' ' + signup_password_message
+                "
+                :disabled="
+                  signup_email_address_message.length +
+                    signup_password_message.length >
+                  0
+                "
+              />
+            </td>
+          </tr>
+        </table>
+      </form>
       <p style="font-style: italic">
         {{ signup_response_message }}
       </p>

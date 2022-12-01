@@ -6,8 +6,6 @@ from circuit_seq_server.utils import get_start_of_week
 
 def test_get_start_of_week():
     assert get_start_of_week().weekday() == 0
-    assert get_start_of_week().month == datetime.date.today().month
-    assert get_start_of_week().year == datetime.date.today().year
     for d in range(1, 6):
         # first week of november
         current_date = datetime.date(2022, 11, d)
