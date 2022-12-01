@@ -1,11 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import ListItem from "@/components/ListItem.vue";
-import {
-  apiClient,
-  download_reference_sequence,
-  download_result,
-} from "@/utils/api-client";
+import SamplesTable from "@/components/SamplesTable.vue";
+import { apiClient } from "@/utils/api-client";
 import { validate_sample_name } from "@/utils/validation";
 import type { Sample, RunningOptions } from "@/utils/types";
 const new_sample_name = ref("");
@@ -117,35 +114,10 @@ function add_sample() {
 
 <template>
   <main>
-    <ListItem title="My samplesp" icon="bi-clipboard-data">
+    <ListItem title="My samples" icon="bi-clipboard-data">
       <template v-if="current_samples.length > 0">
         <p>Your samples for this week:</p>
-        <table class="zebra">
-          <tr>
-            <th>Primary Key</th>
-            <th>Sample Name</th>
-            <th>Running Option</th>
-            <th>Reference Sequence</th>
-          </tr>
-          <tr v-for="sample in current_samples" :key="sample.id">
-            <td>{{ sample["primary_key"] }}</td>
-            <td>{{ sample["name"] }}</td>
-            <td>{{ sample["running_option"] }}</td>
-            <td>
-              <template v-if="sample['reference_sequence_description']">
-                <a
-                  href=""
-                  @click.prevent="
-                    download_reference_sequence(sample['primary_key'])
-                  "
-                >
-                  {{ sample["reference_sequence_description"] }}
-                </a>
-              </template>
-              <template v-else> - </template>
-            </td>
-          </tr>
-        </table>
+        <SamplesTable :samples="current_samples"></SamplesTable>
       </template>
       <template v-else>
         <p>You don't have any samples this week.</p>
@@ -233,75 +205,7 @@ function add_sample() {
     <ListItem title="Results" icon="bi-clipboard-data">
       <template v-if="previous_samples.length > 0">
         <p>Results from your previous samples:</p>
-        <table class="zebra">
-          <tr>
-            <th>Date</th>
-            <th>Primary Key</th>
-            <th>Sample Name</th>
-            <th>Running Option</th>
-            <th>Reference Sequence</th>
-            <th>Results</th>
-          </tr>
-          <tr v-for="sample in previous_samples" :key="sample.id">
-            <td>{{ new Date(sample["date"]).toLocaleDateString("en-CA") }}</td>
-            <td>{{ sample["primary_key"] }}</td>
-            <td>{{ sample["name"] }}</td>
-            <td>{{ sample["running_option"] }}</td>
-            <td>
-              <template v-if="sample['reference_sequence_description']">
-                <a
-                  href=""
-                  @click.prevent="
-                    download_reference_sequence(sample['primary_key'])
-                  "
-                >
-                  {{ sample["reference_sequence_description"] }}
-                </a>
-              </template>
-              <template v-else> - </template>
-            </td>
-            <td>
-              <template
-                v-if="
-                  !(
-                    sample.has_results_fasta ||
-                    sample.has_results_gbk ||
-                    sample.has_results_zip
-                  )
-                "
-              >
-                -
-              </template>
-              <template v-else>
-                <template v-if="sample.has_results_fasta">
-                  <a
-                    href=""
-                    @click.prevent="
-                      download_result(sample.primary_key, 'fasta')
-                    "
-                    >fasta</a
-                  >
-                  |
-                </template>
-                <template v-if="sample.has_results_gbk">
-                  <a
-                    href=""
-                    @click.prevent="download_result(sample.primary_key, 'gbk')"
-                    >gbk</a
-                  >
-                  |
-                </template>
-                <template v-if="sample.has_results_zip">
-                  <a
-                    href=""
-                    @click.prevent="download_result(sample.primary_key, 'zip')"
-                    >zip</a
-                  >
-                </template>
-              </template>
-            </td>
-          </tr>
-        </table>
+        <SamplesTable :samples="previous_samples"></SamplesTable>
       </template>
       <template v-else>
         <p>No previous samples.</p>
