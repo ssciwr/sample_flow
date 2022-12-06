@@ -104,6 +104,20 @@ def create_app(data_path: str = "/circuit_seq_data"):
         message, code = activate_user(token)
         return jsonify(message=message), code
 
+    @app.route("/change_password", methods=["POST"])
+    @jwt_required()
+    def change_password():
+        current_password = request.json.get("current_password", None)
+        if current_password is None:
+            return jsonify("Current password missing"), 401
+        new_password = request.json.get("new_password", None)
+        if new_password is None:
+            return jsonify("New password missing"), 401
+        logger.info(f"Password change request from {current_user.email}")
+        if current_user.set_password(current_password, new_password):
+            return jsonify("Password changed.")
+        return jsonify("Failed to change password: current password incorrect."), 401
+
     @app.route("/remaining", methods=["GET"])
     def remaining():
         return remaining_samples_this_week()

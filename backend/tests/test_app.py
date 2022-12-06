@@ -52,6 +52,48 @@ def test_login_valid(client):
     assert response.json["user"]["is_admin"] is False
 
 
+def test_change_password_invalid(client):
+    headers = _get_auth_headers(client)
+    response = client.post("/login", json={"email": "user@embl.de", "password": "user"})
+    assert response.status_code == 200
+    response = client.post(
+        "/change_password",
+        headers=headers,
+        json={"current_password": "wrong", "new_password": "abc123"},
+    )
+    assert response.status_code == 401
+    assert "Failed to change password" in response.json
+    response = client.post(
+        "/change_password", headers=headers, json={"new_password": "abc123"}
+    )
+    assert response.status_code == 401
+    assert response.json == "Current password missing"
+    response = client.post(
+        "/change_password", headers=headers, json={"current_password": "abc123"}
+    )
+    assert response.status_code == 401
+    assert response.json == "New password missing"
+
+
+def test_change_password_valid(client):
+    headers = _get_auth_headers(client)
+    response = client.post("/login", json={"email": "user@embl.de", "password": "user"})
+    assert response.status_code == 200
+    response = client.post(
+        "/change_password",
+        headers=headers,
+        json={"current_password": "user", "new_password": "abc123"},
+    )
+    assert response.status_code == 200
+    assert "Password changed" in response.json
+    response = client.post("/login", json={"email": "user@embl.de", "password": "user"})
+    assert response.status_code == 401
+    response = client.post(
+        "/login", json={"email": "user@embl.de", "password": "abc123"}
+    )
+    assert response.status_code == 200
+
+
 def test_jwt_same_secret_persists_valid_tokens(tmp_path, monkeypatch):
     monkeypatch.setenv("JWT_SECRET_KEY", "0123456789abcdefghijklmnopqrstuvwxyz")
     app1 = circuit_seq_server.create_app(data_path=str(tmp_path))
