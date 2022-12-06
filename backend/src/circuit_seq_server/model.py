@@ -222,13 +222,13 @@ def process_result(result_zip_file: FileStorage, data_path: str) -> Tuple[str, i
         result_zip_file.filename, data_path
     )
     if results_dir == "":
-        logger.warn(f" --> Invalid filename")
+        logger.warning(f" --> Invalid filename")
         return f"Invalid filename {result_zip_file.filename}", 401
     sample = db.session.execute(
         db.select(Sample).filter_by(primary_key=key)
     ).scalar_one_or_none()
     if sample is None:
-        logger.warn(f" --> Unknown primary key {key}")
+        logger.warning(f" --> Unknown primary key {key}")
         return f"Unknown primary key {key}", 401
     pathlib.Path(results_dir).mkdir(parents=True, exist_ok=True)
     basename = f"{key}_{sample.name}"
@@ -255,7 +255,7 @@ def process_result(result_zip_file: FileStorage, data_path: str) -> Tuple[str, i
                     sample.has_results_gbk = True
                     files_to_email.append(result_file)
     except Exception as e:
-        logger.warn(f"Failed to process zip file: {e}")
+        logger.warning(f"Failed to process zip file: {e}")
     _send_result_email(sample, files_to_email)
     db.session.commit()
     return str(results_file), 200
@@ -269,8 +269,8 @@ class User(db.Model):
     activated = db.Column(db.Boolean, nullable=False)
     is_admin = db.Column(db.Boolean, nullable=False)
 
-    def set_password(self, old_password: str, new_password: str) -> bool:
-        if self.check_password(old_password):
+    def set_password(self, current_password: str, new_password: str) -> bool:
+        if self.check_password(current_password):
             self.password_hash = ph.hash(new_password)
             db.session.commit()
             return True

@@ -23,7 +23,7 @@ def decode_activation_token(token: str, secret_key: str) -> Optional[str]:
     try:
         email = ss.loads(token, max_age=one_week_in_secs)
     except Exception as e:
-        logger.warn(f"Invalid or expired activation token: {e}")
+        logger.warning(f"Invalid or expired activation token: {e}")
         return None
     return email
 
@@ -89,7 +89,7 @@ def parse_seq_to_fasta(
                         )
                         record.description = custom_desc
             except Exception as e:
-                logger.warn(f"snapgene_reader error: {e}")
+                logger.warning(f"snapgene_reader error: {e}")
         if seqio_format == "fasta":
             reference_sequence_description = record.description
         else:
