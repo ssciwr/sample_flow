@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, Dict, Tuple
+from typing import Optional, Dict, Tuple, List
 import smtplib
 from email.message import EmailMessage
 import re
@@ -138,27 +138,18 @@ def _write_samples_as_tsv_this_week(
     logger.info(f"Updating {filename}...")
     with open(filename, "w", newline="") as tsv_file:
         writer = csv.writer(tsv_file, delimiter="\t", lineterminator="\n")
-        writer.writerow(
-            [
-                "date",
-                "primary_key",
-                "email",
-                "name",
-                "running_option",
-            ]
-        )
+        columns = [
+            "date",
+            "primary_key",
+            "email",
+            "name",
+            "running_option",
+        ]
+        writer.writerow(columns)
         for sample_tuple in current_samples:
             sample = sample_tuple[0]
             logger.info(f"  - {sample.primary_key}")
-            writer.writerow(
-                [
-                    sample.date,
-                    sample.primary_key,
-                    sample.email,
-                    sample.name,
-                    sample.running_option,
-                ]
-            )
+            writer.writerow([getattr(sample, column) for column in columns])
     return filename
 
 
@@ -192,6 +183,39 @@ def _results_dir_and_key_from_filename(
     return f"{data_path}/20{yy}/{ww}/results", f"{yy}_{ww}_{nn}"
 
 
+def _send_result_email(sample: Sample, result_files: List[str]):
+    try:
+        logger.info(f"Sending {sample.primary_key} result email to {sample.email}")
+        msg = EmailMessage()
+        msg.set_content(
+            f"Dear {sample.email},\n\n"
+            f"Your sample {sample.primary_key}_{sample.name} has been processed "
+            f"and the results are attached to this email.\n\n"
+            f"You can also download the full analysis data by "
+            f"logging in to your account at https://circuitseq.iwr.uni-heidelberg.de\n\n"
+            f"Best wishes,\n\n"
+            f"CircuitSEQ Team."
+        )
+        msg[
+            "Subject"
+        ] = f"CircuitSEQ results for sample {sample.primary_key}_{sample.name}"
+        msg["From"] = "no-reply@circuitseq.iwr.uni-heidelberg.de"
+        msg["To"] = sample.email
+        for result_file in result_files:
+            with open(result_file, "rb") as fp:
+                result_file_data = fp.read()
+            msg.add_attachment(
+                result_file_data,
+                maintype="application",
+                subtype="octet-stream",
+                filename=result_file.split("/")[-1],
+            )
+        with smtplib.SMTP("email:587") as s:
+            s.send_message(msg)
+    except Exception as e:
+        logger.warning(f"  --> failed to send result email: {e}")
+
+
 def process_result(result_zip_file: FileStorage, data_path: str) -> Tuple[str, int]:
     logger.info(f"Processing zip file {result_zip_file}")
     results_dir, key = _results_dir_and_key_from_filename(
@@ -212,22 +236,27 @@ def process_result(result_zip_file: FileStorage, data_path: str) -> Tuple[str, i
     result_zip_file.save(results_file)
     logger.info(f"  --> {results_file}")
     sample.has_results_zip = True
+    files_to_email = []
     try:
         zip_file = zipfile.ZipFile(results_file)
         for zip_info in zip_file.infolist():
             if not zip_info.is_dir():
                 # remove any leading directories from filename in zip file
                 zip_info.filename = pathlib.Path(zip_info.filename).name
+                result_file = f"{results_dir}/{zip_info.filename}"
                 if zip_info.filename == f"{basename}.fasta":
                     zip_file.extract(zip_info, results_dir)
-                    logger.info(f"  --> {results_dir}/{zip_info.filename}")
+                    logger.info(f"  --> {result_file}")
                     sample.has_results_fasta = True
+                    files_to_email.append(result_file)
                 elif zip_info.filename == f"{basename}.gbk":
                     zip_file.extract(zip_info, results_dir)
-                    logger.info(f"  --> {results_dir}/{zip_info.filename}")
+                    logger.info(f"  --> {result_file}")
                     sample.has_results_gbk = True
+                    files_to_email.append(result_file)
     except Exception as e:
         logger.warn(f"Failed to process zip file: {e}")
+    _send_result_email(sample, files_to_email)
     db.session.commit()
     return str(results_file), 200
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 import circuit_seq_server.model as model
 import datetime
+import pathlib
 from freezegun import freeze_time
 from werkzeug.datastructures import FileStorage
 
@@ -220,14 +221,26 @@ def test_add_new_user_valid(app):
 
 def test_process_result_valid(app, result_zipfiles, tmp_path):
     with app.app_context():
+        last_email_msg = app.config.get("TESTING_ONLY_LAST_SMTP_MESSAGE")
+        assert last_email_msg is None
         for result_zipfile in result_zipfiles:
             with open(result_zipfile, "rb") as f:
                 message, code = model.process_result(FileStorage(f), str(tmp_path))
             assert code == 200
+            zip_file_path = pathlib.Path(result_zipfile.name)
             assert result_zipfile.name in message
             results_dir = tmp_path / "2022/46/results"
             assert results_dir.is_dir()
-            zip_path_on_server = results_dir / result_zipfile.name
+            zip_path_on_server = results_dir / zip_file_path
             assert zip_path_on_server.is_file()
             assert zip_path_on_server.with_suffix(".fasta").is_file()
             assert zip_path_on_server.with_suffix(".gbk").is_file()
+            last_email_msg = app.config.get("TESTING_ONLY_LAST_SMTP_MESSAGE")
+            assert last_email_msg is not None
+            assert zip_file_path.stem in str(last_email_msg.get_body())
+            email_attachments = [
+                attachment.get_filename()
+                for attachment in last_email_msg.iter_attachments()
+            ]
+            assert str(zip_file_path.with_suffix(".fasta")) in email_attachments
+            assert str(zip_file_path.with_suffix(".gbk")) in email_attachments
