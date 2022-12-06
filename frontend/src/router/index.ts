@@ -27,7 +27,7 @@ const router = createRouter({
       component: () => import("../views/SamplesView.vue"),
       beforeEnter: (to, from) => {
         const userStore = useUserStore();
-        if (userStore.user === null && to.name !== "Login") {
+        if (userStore.user === null && to.name !== "login") {
           return { name: "login" };
         }
       },
@@ -40,7 +40,7 @@ const router = createRouter({
         const userStore = useUserStore();
         if (
           (userStore.user === null || !userStore.user.is_admin) &&
-          to.name !== "Login"
+          to.name !== "login"
         ) {
           return { name: "login" };
         }
