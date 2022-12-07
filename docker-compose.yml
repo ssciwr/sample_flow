@@ -1,5 +1,6 @@
 services:
   backend:
+    image: ghcr.io/ssciwr/circuit_seq_backend:${CIRCUIT_SEQ_DOCKER_IMAGE_TAG:-latest}
     build: ./backend
     ports:
       - 8080:8080
@@ -10,6 +11,7 @@ services:
     environment:
       - JWT_SECRET_KEY=${CIRCUIT_SEQ_JWT_SECRET_KEY:-}
   frontend:
+    image: ghcr.io/ssciwr/circuit_seq_frontend:${CIRCUIT_SEQ_DOCKER_IMAGE_TAG:-latest}
     build: ./frontend
     ports:
       - 80:80

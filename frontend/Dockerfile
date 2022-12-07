@@ -1,4 +1,8 @@
-FROM node:16-slim as builder
+FROM node:18-slim as builder
+
+LABEL org.opencontainers.image.source=https://github.com/ssciwr/circuit_seq
+LABEL org.opencontainers.image.description="CircuitSEQ frontend production image"
+LABEL org.opencontainers.image.licenses=MIT
 
 WORKDIR /app
 
