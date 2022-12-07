@@ -91,21 +91,29 @@ Both the backend and the frontend have a Dockerfile, and there is docker-compose
 
 ## Production deployment
 
-Same as docker-compose but with additional `.env` and `frontend/.env.local` files
-to set location of database, cert/key pair from letsencrypt, and public url.
-
-### To deploy on the VM
+Same as docker-compose but instead of building from source there are also public production containers
+built by CI that can be pulled, so all that is needed to deploy the latest version is to download the docker-compose.yml file, then
 
 ```
-cd circuit_seq
-# check current status
-sudo docker-compose ps
-# see current logs
-sudo docker-compose logs
-# update code
-git fetch && git pull
-# re-build & re-launch containers
+sudo docker-compose pull
 sudo docker-compose up --build -d
+```
+
+The location of data directory, SSL keys and secret key should be set
+either in env vars or in a file `.env` in the same location as the docker-compose.yml, e.g.:
+
+```
+CIRCUIT_SEQ_DATA="/home/ubuntu/circuit_seq/docker_volume"
+CIRCUIT_SEQ_SSL_CERT="/etc/letsencrypt/live/circuitseq.iwr.uni-heidelberg.de/fullchain.pem"
+CIRCUIT_SEQ_SSL_KEY="/etc/letsencrypt/live/circuitseq.iwr.uni-heidelberg.de/privkey.pem"
+CIRCUIT_SEQ_JWT_SECRET_KEY="abc123" # to generate a new secret key: `python -c "import secrets; print(secrets.token_urlsafe(64))"`
+```
+
+The current status of the containers can be checked with
+
+```
+sudo docker-compose ps
+sudo docker-compose logs
 ```
 
 ### Give users admin rights
