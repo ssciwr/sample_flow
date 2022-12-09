@@ -273,6 +273,33 @@ def test_sample_mon_snapgene(client, ref_seq_snapgene):
         assert new_sample["reference_sequence_description"] in f.readline()
 
 
+@freeze_time("2022-11-21")
+def test_sample_mon_snapgene_noid(client, ref_seq_snapgene_noid):
+    headers = _get_auth_headers(client)
+    response = client.post(
+        "/sample",
+        data={
+            "name": "abc",
+            "running_option": "run1",
+            "file": (ref_seq_snapgene_noid, "test_file.dna"),
+        },
+        headers=headers,
+    )
+    assert response.status_code == 200
+    new_sample = response.json["sample"]
+    assert new_sample["email"] == "user@embl.de"
+    assert new_sample["name"] == "abc"
+    assert new_sample["primary_key"] == "22_47_A1"
+    # fallback to filename for description if no id present in file:
+    assert new_sample["reference_sequence_description"] == "test_file"
+    assert new_sample["running_option"] == "run1"
+    data_path = pathlib.Path(client.application.config.get("CIRCUITSEQ_DATA_PATH"))
+    fasta_path = data_path / "2022/47/inputs/references/22_47_A1_abc.fasta"
+    assert fasta_path.is_file()
+    with fasta_path.open() as f:
+        assert new_sample["reference_sequence_description"] in f.readline()
+
+
 def test_result_invalid(client, result_zipfiles):
     response = client.post("/result", json={"primary_key": "XYZ", "filetype": "zip"})
     assert response.status_code == 401

@@ -60,6 +60,31 @@ def _guess_seqio_format(filename: str):
     return "fasta"
 
 
+def _set_record_id_from_snapgene_custom_label(
+    input_file: pathlib.Path, record: SeqIO.SeqRecord
+) -> bool:
+    success = False
+    try:
+        d = snapgene_reader.snapgene_file_to_dict(input_file)
+        notes = d.get("notes")
+        if notes is not None:
+            logger.info("  -> found notes")
+            custom_id = notes.get("CustomMapLabel")
+            if custom_id is not None:
+                logger.info(f"    -> using CustomMapLabel '{custom_id}' as record id")
+                record.id = custom_id
+                success = True
+            custom_desc = notes.get("Description")
+            if custom_desc is not None:
+                logger.info(
+                    f"    -> using Description '{custom_desc}' as record description"
+                )
+                record.description = custom_desc
+    except Exception as e:
+        logger.warning(f"snapgene_reader error: {e}")
+    return success
+
+
 def parse_seq_to_fasta(
     input_file: pathlib.Path, output_file: str, original_filename: str
 ) -> Optional[str]:
@@ -70,26 +95,9 @@ def parse_seq_to_fasta(
         logger.info(f"  - id: {record.id}")
         logger.info(f"  - desc: {record.description}")
         if seqio_format == "snapgene":
-            logger.info("Parsing snapgene file with snapgene_reader")
-            try:
-                d = snapgene_reader.snapgene_file_to_dict(input_file)
-                notes = d.get("notes")
-                if notes is not None:
-                    logger.info("  -> found notes")
-                    custom_id = notes.get("CustomMapLabel")
-                    if custom_id is not None:
-                        logger.info(
-                            f"    -> using CustomMapLabel '{custom_id}' as record id"
-                        )
-                        record.id = custom_id
-                    custom_desc = notes.get("Description")
-                    if custom_desc is not None:
-                        logger.info(
-                            f"    -> using Description '{custom_desc}' as record description"
-                        )
-                        record.description = custom_desc
-            except Exception as e:
-                logger.warning(f"snapgene_reader error: {e}")
+            if not _set_record_id_from_snapgene_custom_label(input_file, record):
+                record.id = pathlib.Path(original_filename).stem
+                record.description = record.id
         if seqio_format == "fasta":
             reference_sequence_description = record.description
         else:

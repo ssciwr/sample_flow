@@ -294,3 +294,15 @@ def ref_seq_snapgene() -> io.BytesIO:
     ).open("rb") as f:
         dna_bytes = io.BytesIO(f.read())
     return dna_bytes
+
+
+@pytest.fixture()
+def ref_seq_snapgene_noid() -> io.BytesIO:
+    with (
+        pathlib.Path(os.path.dirname(os.path.abspath(__file__)))
+        / "data"
+        / "sequences"
+        / "linear.dna"
+    ).open("rb") as f:
+        dna_bytes = io.BytesIO(f.read())
+    return dna_bytes
