@@ -147,7 +147,7 @@ function add_sample() {
                 </template>
               </td>
             </tr>
-            <tr>
+            <tr v-if="running_options.length > 2">
               <td style="text-align: right">Running option:</td>
               <td>
                 <select v-model="new_running_option">
