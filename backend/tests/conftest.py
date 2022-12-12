@@ -47,7 +47,7 @@ def result_zipfiles() -> List[pathlib.Path]:
     results_path = (
         pathlib.Path(os.path.dirname(os.path.abspath(__file__))) / "data" / "results"
     )
-    return list(results_path.glob("*.zip"))
+    return sorted(results_path.glob("*.zip"))
 
 
 @pytest.fixture()
