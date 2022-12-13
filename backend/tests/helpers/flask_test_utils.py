@@ -43,6 +43,7 @@ def add_test_samples(app):
                 primary_key=key,
                 reference_sequence_description=None,
                 running_option="running_option",
+                concentration=100 + 13 * n,
                 date=datetime.date.fromisocalendar(2022, week, n),
                 has_results_zip=False,
                 has_results_fasta=False,

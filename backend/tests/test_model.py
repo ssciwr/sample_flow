@@ -66,13 +66,14 @@ def test_add_new_sample_mon(app, tmp_path):
         assert model.remaining_samples_this_week(current_date)["remaining"] == 96
         # add a sample without a reference sequence
         new_sample, error_message = model.add_new_sample(
-            "u1@embl.de", "s1", "running option", None, str(tmp_path)
+            "u1@embl.de", "s1", "running option", 234, None, str(tmp_path)
         )
         assert error_message == ""
         assert new_sample is not None
         assert new_sample.email == "u1@embl.de"
         assert new_sample.name == "s1"
         assert new_sample.running_option == "running option"
+        assert new_sample.concentration == 234
         year, week, day = current_date.isocalendar()
         assert new_sample.primary_key == f"{year%100}_{week}_A1"
         assert new_sample.date == current_date
@@ -99,7 +100,7 @@ def test_add_new_sample_sat(app, tmp_path):
         )
         # try to add a sample on a saturday
         new_sample, error_message = model.add_new_sample(
-            "u1@embl.de", "s1", "running option", None, str(tmp_path)
+            "u1@embl.de", "s1", "running option", 123, None, str(tmp_path)
         )
         assert new_sample is None
         assert "closed" in error_message
@@ -117,7 +118,7 @@ def test_add_new_sample_sat(app, tmp_path):
         assert model.remaining_samples_this_week(current_date)["message"] == ""
         # try to add a sample on a saturday
         new_sample, error_message = model.add_new_sample(
-            "u1@embl.de", "s1", "running option", None, str(tmp_path)
+            "u1@embl.de", "s1", "running option", 123, None, str(tmp_path)
         )
         assert new_sample is not None
         assert error_message == ""
@@ -137,7 +138,7 @@ def test_add_new_sample_full(app, tmp_path):
         assert model._count_samples_this_week(current_date) == 0
         assert model.remaining_samples_this_week(current_date)["remaining"] == 1
         new_sample, error_message = model.add_new_sample(
-            "u1@embl.de", "s1", "running option", None, str(tmp_path)
+            "u1@embl.de", "s1", "running option", 11, None, str(tmp_path)
         )
         assert new_sample is not None
         assert error_message == ""
@@ -148,7 +149,7 @@ def test_add_new_sample_full(app, tmp_path):
             == "All samples have been taken this week."
         )
         new_sample, error_message = model.add_new_sample(
-            "u1@embl.de", "s2", "running option", None, str(tmp_path)
+            "u1@embl.de", "s2", "running option", 66, None, str(tmp_path)
         )
         assert new_sample is None
         assert "samples have been taken this week" in error_message

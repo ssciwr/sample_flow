@@ -231,12 +231,19 @@ def create_app(data_path: str = "/circuit_seq_data"):
     @jwt_required()
     def add_sample():
         email = current_user.email
-        name = request.form.to_dict().get("name", "")
-        running_option = request.form.to_dict().get("running_option", "")
+        form_as_dict = request.form.to_dict()
+        name = form_as_dict.get("name", "")
+        running_option = form_as_dict.get("running_option", "")
+        concentration = int(form_as_dict.get("concentration", "0"))
         reference_sequence_file = request.files.to_dict().get("file", None)
         logger.info(f"Adding sample {name} from {email}")
         new_sample, error_message = add_new_sample(
-            email, name, running_option, reference_sequence_file, data_path
+            email,
+            name,
+            running_option,
+            concentration,
+            reference_sequence_file,
+            data_path,
         )
         if new_sample is not None:
             logger.info(f"  - > success")

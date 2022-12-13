@@ -24,7 +24,15 @@ apiClient
         samples.
       </p>
       <ul>
-        <li>Samples must be submitted by Wednesday each week.</li>
+        <li>Samples must be submitted by Wednesday each week</li>
+        <ul>
+          <li>via a letter box at H2.06.053.</li>
+          <li>in eppendorf 1.5 ml microtubes.</li>
+          <li>
+            with a concentration between 143 ng/μl (at least 7 μl sample) and
+            1000 ng/μl (at least 1 μl sample).
+          </li>
+        </ul>
         <li>Results will be available on Friday.</li>
         <template v-if="remaining_message">
           <li>{{ remaining_message }} Please try again on Monday.</li>

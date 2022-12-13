@@ -158,6 +158,7 @@ def test_sample_mon_fasta(client, ref_seq_fasta):
         data={
             "name": "abc",
             "running_option": "r Q",
+            "concentration": 97,
             "file": (ref_seq_fasta, "test.fa"),
         },
         headers=headers,
@@ -169,6 +170,7 @@ def test_sample_mon_fasta(client, ref_seq_fasta):
     assert new_sample["primary_key"] == "22_47_A1"
     assert new_sample["reference_sequence_description"] == "seq0"
     assert new_sample["running_option"] == "r Q"
+    assert new_sample["concentration"] == 97
     data_path = pathlib.Path(client.application.config.get("CIRCUITSEQ_DATA_PATH"))
     fasta_path = data_path / "2022/47/inputs/references/22_47_A1_abc.fasta"
     assert fasta_path.is_file()
@@ -184,6 +186,7 @@ def test_sample_mon_fasta_invalid(client):
         data={
             "name": "abc",
             "running_option": "r",
+            "concentration": 34,
             "file": (io.BytesIO(b"invalid_fasta_contents"), "test.fa"),
         },
         headers=headers,
@@ -203,6 +206,7 @@ def test_sample_mon_embl(client, ref_seq_embl):
         data={
             "name": "abc",
             "running_option": "r23",
+            "concentration": 11,
             "file": (ref_seq_embl, "test.embl"),
         },
         headers=headers,
@@ -214,6 +218,7 @@ def test_sample_mon_embl(client, ref_seq_embl):
     assert new_sample["primary_key"] == "22_47_A1"
     assert new_sample["reference_sequence_description"] == "X56734.1"
     assert new_sample["running_option"] == "r23"
+    assert new_sample["concentration"] == 11
     data_path = pathlib.Path(client.application.config.get("CIRCUITSEQ_DATA_PATH"))
     fasta_path = data_path / "2022/47/inputs/references/22_47_A1_abc.fasta"
     assert fasta_path.is_file()
@@ -229,6 +234,7 @@ def test_sample_mon_genbank(client, ref_seq_genbank):
         data={
             "name": "abc",
             "running_option": "run1",
+            "concentration": 177,
             "file": (ref_seq_genbank, "test.gbk"),
         },
         headers=headers,
@@ -240,6 +246,7 @@ def test_sample_mon_genbank(client, ref_seq_genbank):
     assert new_sample["primary_key"] == "22_47_A1"
     assert new_sample["reference_sequence_description"] == "Z78533.1"
     assert new_sample["running_option"] == "run1"
+    assert new_sample["concentration"] == 177
     data_path = pathlib.Path(client.application.config.get("CIRCUITSEQ_DATA_PATH"))
     fasta_path = data_path / "2022/47/inputs/references/22_47_A1_abc.fasta"
     assert fasta_path.is_file()
@@ -255,6 +262,7 @@ def test_sample_mon_snapgene(client, ref_seq_snapgene):
         data={
             "name": "abc",
             "running_option": "run1",
+            "concentration": 131,
             "file": (ref_seq_snapgene, "test.dna"),
         },
         headers=headers,
@@ -266,6 +274,7 @@ def test_sample_mon_snapgene(client, ref_seq_snapgene):
     assert new_sample["primary_key"] == "22_47_A1"
     assert new_sample["reference_sequence_description"] == "BlueScribe"
     assert new_sample["running_option"] == "run1"
+    assert new_sample["concentration"] == 131
     data_path = pathlib.Path(client.application.config.get("CIRCUITSEQ_DATA_PATH"))
     fasta_path = data_path / "2022/47/inputs/references/22_47_A1_abc.fasta"
     assert fasta_path.is_file()
@@ -281,6 +290,7 @@ def test_sample_mon_snapgene_noid(client, ref_seq_snapgene_noid):
         data={
             "name": "abc",
             "running_option": "run1",
+            "concentration": 111,
             "file": (ref_seq_snapgene_noid, "test_file.dna"),
         },
         headers=headers,
@@ -293,6 +303,7 @@ def test_sample_mon_snapgene_noid(client, ref_seq_snapgene_noid):
     # fallback to filename for description if no id present in file:
     assert new_sample["reference_sequence_description"] == "test_file"
     assert new_sample["running_option"] == "run1"
+    assert new_sample["concentration"] == 111
     data_path = pathlib.Path(client.application.config.get("CIRCUITSEQ_DATA_PATH"))
     fasta_path = data_path / "2022/47/inputs/references/22_47_A1_abc.fasta"
     assert fasta_path.is_file()
@@ -453,15 +464,36 @@ def test_admin_zipsamples_invalid(client):
     assert response.status_code == 401
 
 
-def test_admin_zipsamples_valid(client):
+@freeze_time("2022-11-21")
+def test_admin_zipsamples_valid(client, ref_seq_fasta):
     headers = _get_auth_headers(client, "admin@embl.de", "admin")
+    # upload a sample
+    response = client.post(
+        "/sample",
+        data={
+            "name": "abc",
+            "running_option": "r Q",
+            "concentration": 97,
+            "file": (ref_seq_fasta, "test.fa"),
+        },
+        headers=headers,
+    )
+    assert response.status_code == 200
+    # get samples tsv
     response = client.post("/admin/zipsamples", headers=headers)
     assert response.status_code == 200
     zip_file = zipfile.ZipFile(io.BytesIO(response.data))
-    assert len(zip_file.filelist) == 1
-    assert zip_file.filelist[0].filename == "samples.tsv"
-    tsv = zip_file.read("samples.tsv")
-    assert tsv == b"date\tprimary_key\temail\tname\trunning_option\n"
+    filenames = [f.filename for f in zip_file.filelist]
+    assert len(filenames) == 3
+    assert "samples.tsv" in filenames
+    assert "references/" in filenames
+    assert "references/22_47_A1_abc.fasta" in filenames
+    tsv_lines = zip_file.read("samples.tsv").splitlines()
+    assert len(tsv_lines) == 2
+    assert (
+        tsv_lines[0] == b"date\tprimary_key\temail\tname\trunning_option\tconcentration"
+    )
+    assert tsv_lines[1] == b"2022-11-21\t22_47_A1\tadmin@embl.de\tabc\tr Q\t97"
 
 
 def test_admin_result_valid(client, result_zipfiles):
