@@ -86,13 +86,14 @@ class Sample(db.Model):
     primary_key: str = db.Column(db.String(32), nullable=False, unique=True)
     name: str = db.Column(db.String(128), nullable=False)
     running_option: str = db.Column(db.String(128), nullable=False)
+    concentration: int = db.Column(db.Integer, nullable=False)
     reference_sequence_description: Optional[str] = db.Column(
         db.String(256), nullable=True
     )
+    date: datetime.date = db.Column(db.Date, nullable=False)
     has_results_fasta: bool = db.Column(db.Boolean, nullable=False)
     has_results_gbk: bool = db.Column(db.Boolean, nullable=False)
     has_results_zip: bool = db.Column(db.Boolean, nullable=False)
-    date: datetime.date = db.Column(db.Date, nullable=False)
 
 
 def _samples_this_week(current_date: datetime.date):
@@ -144,6 +145,7 @@ def _write_samples_as_tsv_this_week(
             "email",
             "name",
             "running_option",
+            "concentration",
         ]
         writer.writerow(columns)
         for sample_tuple in current_samples:
@@ -386,6 +388,7 @@ def add_new_sample(
     email: str,
     name: str,
     running_option: str,
+    concentration: int,
     reference_sequence_file: Optional[FileStorage],
     data_path: str,
 ) -> Tuple[Optional[Sample], str]:
@@ -423,10 +426,11 @@ def add_new_sample(
                 return None, "Failed to parse reference sequence file."
     new_sample = Sample(
         email=email,
-        name=name,
         primary_key=key,
-        reference_sequence_description=reference_sequence_description,
+        name=name,
         running_option=running_option,
+        concentration=concentration,
+        reference_sequence_description=reference_sequence_description,
         date=today,
         has_results_zip=False,
         has_results_fasta=False,

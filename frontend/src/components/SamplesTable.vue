@@ -16,6 +16,7 @@ defineProps<{
       <th>Primary Key</th>
       <th>Sample Name</th>
       <th>Running Option</th>
+      <th>Concentration</th>
       <th>Reference Sequence</th>
       <th>Results</th>
     </tr>
@@ -23,6 +24,7 @@ defineProps<{
       <td>{{ sample["primary_key"] }}</td>
       <td>{{ sample["name"] }}</td>
       <td>{{ sample["running_option"] }}</td>
+      <td>{{ sample["concentration"] }} ng/μl</td>
       <td>
         <template v-if="sample['reference_sequence_description']">
           <a

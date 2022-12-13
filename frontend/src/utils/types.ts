@@ -4,6 +4,7 @@ export type Sample = {
   name: string;
   email: string;
   running_option: string;
+  concentration: number;
   reference_sequence_description: string | null;
   date: string;
   has_results_zip: boolean;
