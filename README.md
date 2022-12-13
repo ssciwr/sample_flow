@@ -32,7 +32,7 @@ You can sign up for a user account using any valid heidelberg/embl/dkfz email ad
 
 ## Notes
 
-- currently all uploaded samples and registered users may be deleted without warning as the prototype is updated!
+- currently all uploaded samples may be deleted without warning as the prototype is updated!
 
 ## Developer info
 

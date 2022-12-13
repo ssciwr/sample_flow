@@ -73,7 +73,7 @@ jobs:
     name: "Docker"
     steps:
       - uses: actions/checkout@v3
-      - run: echo "VITE_REST_API_LOCATION=https://circuitseq.iwr.uni-heidelberg.de:8080" > frontend/.env
+      - run: echo "VITE_REST_API_LOCATION=https://circuitseq.iwr.uni-heidelberg.de/api" > frontend/.env
       - run: docker-compose build
       - uses: docker/login-action@v2
         with:
