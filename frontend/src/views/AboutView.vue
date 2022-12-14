@@ -7,7 +7,6 @@ const remaining_message = ref("");
 apiClient
   .get("remaining")
   .then((response) => {
-    console.log(response);
     remaining.value = response.data.remaining;
     remaining_message.value = response.data.message;
   })

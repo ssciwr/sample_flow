@@ -3,7 +3,7 @@ describe("Home page", () => {
     cy.intercept(
       {
         method: "GET",
-        url: "/remaining",
+        url: "/api/remaining",
       },
       { remaining: 67 }
     );

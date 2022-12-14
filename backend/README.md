@@ -29,8 +29,6 @@ Options:
   --host TEXT       [default: localhost]
   --port INTEGER    [default: 8080]
   --data-path TEXT  [default: .]
-  --ssl-cert TEXT   [default: ./cert.pem]
-  --ssl-key TEXT    [default: ./key.pem]
   --help            Show this message and exit.
 ```
 

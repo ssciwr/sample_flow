@@ -70,7 +70,7 @@ def create_app(data_path: str = "/circuit_seq_data"):
             db.select(User).filter(User.id == identity)
         ).scalar_one_or_none()
 
-    @app.route("/login", methods=["POST"])
+    @app.route("/api/login", methods=["POST"])
     def login():
         email = request.json.get("email", None)
         password = request.json.get("password", None)
@@ -91,7 +91,7 @@ def create_app(data_path: str = "/circuit_seq_data"):
         access_token = create_access_token(identity=user)
         return jsonify(user=user.as_dict(), access_token=access_token)
 
-    @app.route("/signup", methods=["POST"])
+    @app.route("/api/signup", methods=["POST"])
     def signup():
         email = request.json.get("email", None)
         password = request.json.get("password", None)
@@ -99,12 +99,12 @@ def create_app(data_path: str = "/circuit_seq_data"):
         message, code = add_new_user(email, password, False)
         return jsonify(message=message), code
 
-    @app.route("/activate/<token>")
+    @app.route("/api/activate/<token>")
     def activate(token: str):
         message, code = activate_user(token)
         return jsonify(message=message), code
 
-    @app.route("/change_password", methods=["POST"])
+    @app.route("/api/change_password", methods=["POST"])
     @jwt_required()
     def change_password():
         current_password = request.json.get("current_password", None)
@@ -118,17 +118,17 @@ def create_app(data_path: str = "/circuit_seq_data"):
             return jsonify("Password changed.")
         return jsonify("Failed to change password: current password incorrect."), 401
 
-    @app.route("/remaining", methods=["GET"])
+    @app.route("/api/remaining", methods=["GET"])
     def remaining():
         return remaining_samples_this_week()
 
-    @app.route("/running_options", methods=["GET"])
+    @app.route("/api/running_options", methods=["GET"])
     @jwt_required()
     def running_options():
         settings = get_current_settings()
         return jsonify(running_options=settings["running_options"])
 
-    @app.route("/samples", methods=["GET"])
+    @app.route("/api/samples", methods=["GET"])
     @jwt_required()
     def samples():
         start_of_week = get_start_of_week()
@@ -156,7 +156,7 @@ def create_app(data_path: str = "/circuit_seq_data"):
             current_samples=current_samples, previous_samples=previous_samples
         )
 
-    @app.route("/reference_sequence", methods=["POST"])
+    @app.route("/api/reference_sequence", methods=["POST"])
     @jwt_required()
     def reference_sequence():
         primary_key = request.json.get("primary_key", None)
@@ -189,7 +189,7 @@ def create_app(data_path: str = "/circuit_seq_data"):
         logger.info(f"Returning fasta file {file}")
         return flask.send_file(file, as_attachment=True)
 
-    @app.route("/result", methods=["POST"])
+    @app.route("/api/result", methods=["POST"])
     @jwt_required()
     def result():
         primary_key = request.json.get("primary_key", None)
@@ -227,7 +227,7 @@ def create_app(data_path: str = "/circuit_seq_data"):
         logger.info(f"Returning {filetype} file {file}")
         return flask.send_file(file, as_attachment=True)
 
-    @app.route("/sample", methods=["POST"])
+    @app.route("/api/sample", methods=["POST"])
     @jwt_required()
     def add_sample():
         email = current_user.email
@@ -250,7 +250,7 @@ def create_app(data_path: str = "/circuit_seq_data"):
             return jsonify(sample=new_sample)
         return jsonify(message=error_message), 401
 
-    @app.route("/admin/settings", methods=["GET", "POST"])
+    @app.route("/api/admin/settings", methods=["GET", "POST"])
     @jwt_required()
     def admin_settings():
         if not current_user.is_admin:
@@ -261,7 +261,7 @@ def create_app(data_path: str = "/circuit_seq_data"):
         else:
             return get_current_settings()
 
-    @app.route("/admin/samples", methods=["GET"])
+    @app.route("/api/admin/samples", methods=["GET"])
     @jwt_required()
     def admin_all_samples():
         if not current_user.is_admin:
@@ -290,7 +290,7 @@ def create_app(data_path: str = "/circuit_seq_data"):
             current_samples=current_samples, previous_samples=previous_samples
         )
 
-    @app.route("/admin/zipsamples", methods=["POST"])
+    @app.route("/api/admin/zipsamples", methods=["POST"])
     @jwt_required()
     def admin_zip_samples():
         if not current_user.is_admin:
@@ -301,7 +301,7 @@ def create_app(data_path: str = "/circuit_seq_data"):
         zip_file = update_samples_zipfile(data_path, datetime.date.today())
         return flask.send_file(zip_file, as_attachment=True)
 
-    @app.route("/admin/users", methods=["GET"])
+    @app.route("/api/admin/users", methods=["GET"])
     @jwt_required()
     def admin_users():
         if current_user.is_admin:
@@ -309,7 +309,7 @@ def create_app(data_path: str = "/circuit_seq_data"):
             return jsonify(users=[user.as_dict() for user in users])
         return jsonify("Admin account required"), 401
 
-    @app.route("/admin/token", methods=["GET"])
+    @app.route("/api/admin/token", methods=["GET"])
     @jwt_required()
     def admin_token():
         if current_user.is_admin:
@@ -319,7 +319,7 @@ def create_app(data_path: str = "/circuit_seq_data"):
             return jsonify(access_token=access_token)
         return jsonify("Admin account required"), 401
 
-    @app.route("/admin/result", methods=["POST"])
+    @app.route("/api/admin/result", methods=["POST"])
     @jwt_required()
     def admin_upload_result():
         if not current_user.is_admin:

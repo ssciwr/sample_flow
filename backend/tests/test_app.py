@@ -10,34 +10,34 @@ import flask_test_utils as ftu
 
 @freeze_time("2022-11-21")
 def test_remaining_mon(client):
-    response = client.get("/remaining")
+    response = client.get("/api/remaining")
     assert response.json["remaining"] == 96
 
 
 @freeze_time("2022-11-19")
 def test_remaining_sat(client):
-    response = client.get("/remaining")
+    response = client.get("/api/remaining")
     assert response.json["remaining"] == 0
 
 
 def _get_auth_headers(
     client, email: str = "user@embl.de", password: str = "user"
 ) -> Dict:
-    response = client.post("/login", json={"email": email, "password": password})
+    response = client.post("/api/login", json={"email": email, "password": password})
     token = response.json["access_token"]
     return {"Authorization": f"Bearer {token}"}
 
 
 def test_login_invalid(client):
     # missing json
-    response = client.post("/login")
+    response = client.post("/api/login")
     assert response.status_code == 400
     # unknown email
-    response = client.post("/login", json={"email": "", "password": ""})
+    response = client.post("/api/login", json={"email": "", "password": ""})
     assert response.status_code == 401
     assert response.json == "Unknown email address"
     # wrong password
-    response = client.post("/login", json={"email": "user@embl.de", "password": ""})
+    response = client.post("/api/login", json={"email": "user@embl.de", "password": ""})
     assert response.status_code == 401
     assert response.json == "Incorrect password"
 
@@ -45,7 +45,7 @@ def test_login_invalid(client):
 def test_login_valid(client):
     email = "user@embl.de"
     password = "user"
-    response = client.post("/login", json={"email": email, "password": password})
+    response = client.post("/api/login", json={"email": email, "password": password})
     assert response.status_code == 200
     assert "access_token" in response.json
     assert response.json["user"]["email"] == email
@@ -54,22 +54,24 @@ def test_login_valid(client):
 
 def test_change_password_invalid(client):
     headers = _get_auth_headers(client)
-    response = client.post("/login", json={"email": "user@embl.de", "password": "user"})
+    response = client.post(
+        "/api/login", json={"email": "user@embl.de", "password": "user"}
+    )
     assert response.status_code == 200
     response = client.post(
-        "/change_password",
+        "/api/change_password",
         headers=headers,
         json={"current_password": "wrong", "new_password": "abc123"},
     )
     assert response.status_code == 401
     assert "Failed to change password" in response.json
     response = client.post(
-        "/change_password", headers=headers, json={"new_password": "abc123"}
+        "/api/change_password", headers=headers, json={"new_password": "abc123"}
     )
     assert response.status_code == 401
     assert response.json == "Current password missing"
     response = client.post(
-        "/change_password", headers=headers, json={"current_password": "abc123"}
+        "/api/change_password", headers=headers, json={"current_password": "abc123"}
     )
     assert response.status_code == 401
     assert response.json == "New password missing"
@@ -77,19 +79,23 @@ def test_change_password_invalid(client):
 
 def test_change_password_valid(client):
     headers = _get_auth_headers(client)
-    response = client.post("/login", json={"email": "user@embl.de", "password": "user"})
+    response = client.post(
+        "/api/login", json={"email": "user@embl.de", "password": "user"}
+    )
     assert response.status_code == 200
     response = client.post(
-        "/change_password",
+        "/api/change_password",
         headers=headers,
         json={"current_password": "user", "new_password": "abc123"},
     )
     assert response.status_code == 200
     assert "Password changed" in response.json
-    response = client.post("/login", json={"email": "user@embl.de", "password": "user"})
+    response = client.post(
+        "/api/login", json={"email": "user@embl.de", "password": "user"}
+    )
     assert response.status_code == 401
     response = client.post(
-        "/login", json={"email": "user@embl.de", "password": "abc123"}
+        "/api/login", json={"email": "user@embl.de", "password": "abc123"}
     )
     assert response.status_code == 200
 
@@ -100,12 +106,12 @@ def test_jwt_same_secret_persists_valid_tokens(tmp_path, monkeypatch):
     ftu.add_test_users(app1)
     client1 = app1.test_client()
     headers1 = _get_auth_headers(client1)
-    assert client1.get("/samples", headers=headers1).status_code == 200
+    assert client1.get("/api/samples", headers=headers1).status_code == 200
     # create new app with same JWT secret key & user database
     app2 = circuit_seq_server.create_app(data_path=str(tmp_path))
     client2 = app2.test_client()
     # can re-use the same JWT token in the new app
-    assert client2.get("/samples", headers=headers1).status_code == 200
+    assert client2.get("/api/samples", headers=headers1).status_code == 200
 
 
 def test_jwt_different_secret_invalidates_tokens(tmp_path, monkeypatch):
@@ -114,24 +120,24 @@ def test_jwt_different_secret_invalidates_tokens(tmp_path, monkeypatch):
     ftu.add_test_users(app1)
     client1 = app1.test_client()
     headers1 = _get_auth_headers(client1)
-    assert client1.get("/samples", headers=headers1).status_code == 200
+    assert client1.get("/api/samples", headers=headers1).status_code == 200
     # create new app with a different JWT secret key & user database
     monkeypatch.setenv("JWT_SECRET_KEY", "")  # too short: uses random one instead
     app2 = circuit_seq_server.create_app(data_path=str(tmp_path))
     client2 = app2.test_client()
     # can't re-use the same JWT token in the new app
-    assert client2.get("/samples", headers=headers1).status_code == 422
+    assert client2.get("/api/samples", headers=headers1).status_code == 422
 
 
 def test_samples_invalid(client):
     # no auth header
-    response = client.get("/samples")
+    response = client.get("/api/samples")
     assert response.status_code == 401
 
 
 def test_samples_valid(client):
     headers = _get_auth_headers(client)
-    response = client.get("/samples", headers=headers)
+    response = client.get("/api/samples", headers=headers)
     assert response.status_code == 200
     assert "current_samples" in response.json
     assert "previous_samples" in response.json
@@ -139,13 +145,13 @@ def test_samples_valid(client):
 
 def test_running_options_invalid(client):
     # no auth header
-    response = client.get("/running_options")
+    response = client.get("/api/running_options")
     assert response.status_code == 401
 
 
 def test_running_options_valid(client):
     headers = _get_auth_headers(client)
-    response = client.get("/running_options", headers=headers)
+    response = client.get("/api/running_options", headers=headers)
     assert response.status_code == 200
     assert "running_options" in response.json
 
@@ -154,7 +160,7 @@ def test_running_options_valid(client):
 def test_sample_mon_fasta(client, ref_seq_fasta):
     headers = _get_auth_headers(client)
     response = client.post(
-        "/sample",
+        "/api/sample",
         data={
             "name": "abc",
             "running_option": "r Q",
@@ -182,7 +188,7 @@ def test_sample_mon_fasta(client, ref_seq_fasta):
 def test_sample_mon_fasta_invalid(client):
     headers = _get_auth_headers(client)
     response = client.post(
-        "/sample",
+        "/api/sample",
         data={
             "name": "abc",
             "running_option": "r",
@@ -202,7 +208,7 @@ def test_sample_mon_fasta_invalid(client):
 def test_sample_mon_embl(client, ref_seq_embl):
     headers = _get_auth_headers(client)
     response = client.post(
-        "/sample",
+        "/api/sample",
         data={
             "name": "abc",
             "running_option": "r23",
@@ -230,7 +236,7 @@ def test_sample_mon_embl(client, ref_seq_embl):
 def test_sample_mon_genbank(client, ref_seq_genbank):
     headers = _get_auth_headers(client)
     response = client.post(
-        "/sample",
+        "/api/sample",
         data={
             "name": "abc",
             "running_option": "run1",
@@ -258,7 +264,7 @@ def test_sample_mon_genbank(client, ref_seq_genbank):
 def test_sample_mon_snapgene(client, ref_seq_snapgene):
     headers = _get_auth_headers(client)
     response = client.post(
-        "/sample",
+        "/api/sample",
         data={
             "name": "abc",
             "running_option": "run1",
@@ -286,7 +292,7 @@ def test_sample_mon_snapgene(client, ref_seq_snapgene):
 def test_sample_mon_snapgene_noid(client, ref_seq_snapgene_noid):
     headers = _get_auth_headers(client)
     response = client.post(
-        "/sample",
+        "/api/sample",
         data={
             "name": "abc",
             "running_option": "run1",
@@ -311,25 +317,31 @@ def test_sample_mon_snapgene_noid(client, ref_seq_snapgene_noid):
         assert new_sample["reference_sequence_description"] in f.readline()
 
 
-def test_result_invalid(client, result_zipfiles):
-    response = client.post("/result", json={"primary_key": "XYZ", "filetype": "zip"})
+def test_result_invalid(client):
+    response = client.post(
+        "/api/result", json={"primary_key": "XYZ", "filetype": "zip"}
+    )
     assert response.status_code == 401
     headers = _get_auth_headers(client, "user@embl.de", "user")
     response = client.post(
-        "/result", json={"primary_key": "XYZ", "filetype": "zip"}, headers=headers
+        "/api/result", json={"primary_key": "XYZ", "filetype": "zip"}, headers=headers
     )
     assert response.status_code == 401
     assert f"Sample not found" in response.json
     key = "22_46_A2"
     for filetype in ["exe", "txt"]:
         response = client.post(
-            "/result", json={"primary_key": key, "filetype": filetype}, headers=headers
+            "/api/result",
+            json={"primary_key": key, "filetype": filetype},
+            headers=headers,
         )
         assert response.status_code == 401
         assert f"Invalid filetype {filetype}" in response.json
     for filetype in ["fasta", "gbk", "zip"]:
         response = client.post(
-            "/result", json={"primary_key": key, "filetype": filetype}, headers=headers
+            "/api/result",
+            json={"primary_key": key, "filetype": filetype},
+            headers=headers,
         )
         assert response.status_code == 401
         assert f"No {filetype} results available" in response.json
@@ -339,7 +351,7 @@ def _upload_result(client, result_zipfile):
     headers = _get_auth_headers(client, "admin@embl.de", "admin")
     with open(result_zipfile, "rb") as f:
         response = client.post(
-            "/admin/result",
+            "/api/admin/result",
             data={
                 "file": (io.BytesIO(f.read()), result_zipfile.name),
             },
@@ -354,7 +366,9 @@ def test_result_valid(client, result_zipfiles):
     _upload_result(client, result_zipfiles[0])
     for filetype in ["fasta", "gbk", "zip"]:
         response = client.post(
-            "/result", json={"primary_key": key, "filetype": filetype}, headers=headers
+            "/api/result",
+            json={"primary_key": key, "filetype": filetype},
+            headers=headers,
         )
         assert response.status_code == 200
         assert len(response.data) > 1
@@ -362,23 +376,23 @@ def test_result_valid(client, result_zipfiles):
 
 def test_admin_settings_invalid(client):
     # no auth header
-    response = client.get("/admin/settings")
+    response = client.get("/api/admin/settings")
     assert response.status_code == 401
     # valid non-admin user auth header
     headers = _get_auth_headers(client)
-    response = client.get("/admin/settings", headers=headers)
+    response = client.get("/api/admin/settings", headers=headers)
     assert response.status_code == 401
 
 
 def test_admin_settings_valid(client):
     headers = _get_auth_headers(client, "admin@embl.de", "admin")
-    response = client.get("/admin/settings", headers=headers)
+    response = client.get("/api/admin/settings", headers=headers)
     assert response.status_code == 200
     assert response.json["plate_n_rows"] == 8
     assert response.json["plate_n_cols"] == 12
     # set new valid settings
     response = client.post(
-        "/admin/settings",
+        "/api/admin/settings",
         json={
             "plate_n_rows": 14,
             "plate_n_cols": 18,
@@ -388,7 +402,7 @@ def test_admin_settings_valid(client):
         headers=headers,
     )
     assert response.status_code == 200
-    response = client.get("/admin/settings", headers=headers)
+    response = client.get("/api/admin/settings", headers=headers)
     assert response.status_code == 200
     assert response.json["plate_n_rows"] == 14
     assert response.json["plate_n_cols"] == 18
@@ -398,17 +412,17 @@ def test_admin_settings_valid(client):
 
 def test_admin_samples_invalid(client):
     # no auth header
-    response = client.get("/admin/samples")
+    response = client.get("/api/admin/samples")
     assert response.status_code == 401
     # valid non-admin user auth header
     headers = _get_auth_headers(client)
-    response = client.get("/admin/samples", headers=headers)
+    response = client.get("/api/admin/samples", headers=headers)
     assert response.status_code == 401
 
 
 def test_admin_samples_valid(client):
     headers = _get_auth_headers(client, "admin@embl.de", "admin")
-    response = client.get("/admin/samples", headers=headers)
+    response = client.get("/api/admin/samples", headers=headers)
     assert response.status_code == 200
     assert "current_samples" in response.json
     assert "previous_samples" in response.json
@@ -416,22 +430,22 @@ def test_admin_samples_valid(client):
 
 def test_admin_token_invalid(client):
     # no auth header
-    response = client.get("/admin/token")
+    response = client.get("/api/admin/token")
     assert response.status_code == 401
     # valid non-admin user auth header
     headers = _get_auth_headers(client)
-    response = client.get("/admin/token", headers=headers)
+    response = client.get("/api/admin/token", headers=headers)
     assert response.status_code == 401
 
 
 def test_admin_token_valid(client):
     headers = _get_auth_headers(client, "admin@embl.de", "admin")
-    response = client.get("/admin/token", headers=headers)
+    response = client.get("/api/admin/token", headers=headers)
     assert response.status_code == 200
     new_token = response.json["access_token"]
     assert (
         client.get(
-            "/admin/samples", headers={"Authorization": f"Bearer {new_token}"}
+            "/api/admin/samples", headers={"Authorization": f"Bearer {new_token}"}
         ).status_code
         == 200
     )
@@ -439,28 +453,28 @@ def test_admin_token_valid(client):
 
 def test_admin_users_invalid(client):
     # no auth header
-    response = client.get("/admin/users")
+    response = client.get("/api/admin/users")
     assert response.status_code == 401
     # valid non-admin user auth header
     headers = _get_auth_headers(client)
-    response = client.get("/admin/users", headers=headers)
+    response = client.get("/api/admin/users", headers=headers)
     assert response.status_code == 401
 
 
 def test_admin_users_valid(client):
     headers = _get_auth_headers(client, "admin@embl.de", "admin")
-    response = client.get("/admin/users", headers=headers)
+    response = client.get("/api/admin/users", headers=headers)
     assert response.status_code == 200
     assert "users" in response.json
 
 
 def test_admin_zipsamples_invalid(client):
     # no auth header
-    response = client.post("/admin/zipsamples")
+    response = client.post("/api/admin/zipsamples")
     assert response.status_code == 401
     # valid non-admin user auth header
     headers = _get_auth_headers(client)
-    response = client.post("/admin/zipsamples", headers=headers)
+    response = client.post("/api/admin/zipsamples", headers=headers)
     assert response.status_code == 401
 
 
@@ -469,7 +483,7 @@ def test_admin_zipsamples_valid(client, ref_seq_fasta):
     headers = _get_auth_headers(client, "admin@embl.de", "admin")
     # upload a sample
     response = client.post(
-        "/sample",
+        "/api/sample",
         data={
             "name": "abc",
             "running_option": "r Q",
@@ -480,7 +494,7 @@ def test_admin_zipsamples_valid(client, ref_seq_fasta):
     )
     assert response.status_code == 200
     # get samples tsv
-    response = client.post("/admin/zipsamples", headers=headers)
+    response = client.post("/api/admin/zipsamples", headers=headers)
     assert response.status_code == 200
     zip_file = zipfile.ZipFile(io.BytesIO(response.data))
     filenames = [f.filename for f in zip_file.filelist]
