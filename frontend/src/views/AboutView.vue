@@ -46,11 +46,21 @@ apiClient
       <a href="mailto:e.green@dkfz.de?subject=circuitSEQ">e.green@dkfz.de</a>
     </ListItem>
     <ListItem title="References" icon="bi-book">
-      This software implements a variant of the Circuit-seq method published by
-      the McKenna lab:
-      <a href="https://pubs.acs.org/doi/pdf/10.1021/acssynbio.2c00126"
-        >ACS Synth. Biol. 2022, 11, 2238−2246</a
-      >
+      <p>
+        This software implements a variant of the Circuit-seq method published
+        by the McKenna lab:
+        <a href="https://pubs.acs.org/doi/pdf/10.1021/acssynbio.2c00126"
+          >ACS Synth. Biol. 2022, 11, 2238−2246</a
+        >.
+      </p>
+      <p>
+        The <a href="https://github.com/ssciwr/circuit_seq">web service</a> was
+        developed by the
+        <a href="https://ssc.iwr.uni-heidelberg.de/"
+          >Scientific Software Center</a
+        >
+        of Heidelberg University.
+      </p>
     </ListItem>
     <ListItem title="Funding" icon="bi-info-circle">
       This work was funded by the

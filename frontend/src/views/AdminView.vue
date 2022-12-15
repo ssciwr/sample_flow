@@ -80,13 +80,29 @@ function save_settings() {
     });
 }
 
+const upload_primary_key = ref("");
+const upload_success = ref(true);
+const upload_file = ref<File | null>(null);
 const upload_result_message = ref("");
+const upload_button_enabled = computed(() => {
+  return upload_success.value === false || upload_file.value !== null;
+});
 
-function upload_result(event: Event) {
+function update_upload_file(event: Event) {
   const target = event.target as HTMLInputElement;
   if (target.files != null && target.files.length > 0) {
+    upload_file.value = target.files[0];
+  }
+}
+
+function upload_result() {
+  if (upload_button_enabled.value) {
     let formData = new FormData();
-    formData.append("file", target.files[0]);
+    if (upload_file.value !== null) {
+      formData.append("file", upload_file.value);
+    }
+    formData.append("primary_key", upload_primary_key.value);
+    formData.append("success", upload_success.value.toString());
     apiClient
       .post("admin/result", formData, {
         headers: {
@@ -107,7 +123,10 @@ function upload_result(event: Event) {
   <main>
     <ListItem title="Samples this week" icon="bi-gear">
       <p>{{ current_samples.length }} samples have been requested so far:</p>
-      <SamplesTable :samples="current_samples"></SamplesTable>
+      <SamplesTable
+        :samples="current_samples"
+        :show_email="true"
+      ></SamplesTable>
       <p>
         <a href="" @click.prevent="download_zipsamples()">
           Download as zipfile
@@ -116,7 +135,40 @@ function upload_result(event: Event) {
     </ListItem>
     <ListItem title="Upload result" icon="bi-gear">
       <p>Upload a result zipfile:</p>
-      <p><input type="file" name="file" @change="upload_result($event)" /></p>
+      <form @submit.prevent="upload_result">
+        <table>
+          <tr>
+            <td style="text-align: right">Primary key:</td>
+            <td>
+              <input
+                v-model="upload_primary_key"
+                maxlength="256"
+                placeholder="23_01_A1"
+              />
+            </td>
+          </tr>
+          <tr>
+            <td style="text-align: right">Successful:</td>
+            <td><input type="checkbox" v-model="upload_success" /></td>
+          </tr>
+          <tr>
+            <td style="text-align: right">Results zipfile:</td>
+            <td>
+              <input
+                type="file"
+                name="file"
+                @change="update_upload_file($event)"
+              />
+            </td>
+          </tr>
+          <tr>
+            <td></td>
+            <td>
+              <button :disabled="!upload_button_enabled">Upload</button>
+            </td>
+          </tr>
+        </table>
+      </form>
       <p style="font-style: italic">
         {{ upload_result_message }}
       </p>
@@ -198,7 +250,10 @@ function upload_result(event: Event) {
       </p>
     </ListItem>
     <ListItem title="Previous samples" icon="bi-gear">
-      <SamplesTable :samples="previous_samples"></SamplesTable>
+      <SamplesTable
+        :samples="previous_samples"
+        :show_email="true"
+      ></SamplesTable>
     </ListItem>
     <ListItem title="Users" icon="bi-gear">
       <p>{{ users.length }} registered users:</p>

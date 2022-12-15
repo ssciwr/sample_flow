@@ -133,7 +133,10 @@ function add_sample() {
     <ListItem title="My samples" icon="bi-clipboard-data">
       <template v-if="current_samples.length > 0">
         <p>Your samples for this week:</p>
-        <SamplesTable :samples="current_samples"></SamplesTable>
+        <SamplesTable
+          :samples="current_samples"
+          :show_email="false"
+        ></SamplesTable>
       </template>
       <template v-else>
         <p>You don't have any samples this week.</p>
@@ -245,7 +248,10 @@ function add_sample() {
     <ListItem title="Results" icon="bi-clipboard-data">
       <template v-if="previous_samples.length > 0">
         <p>Results from your previous samples:</p>
-        <SamplesTable :samples="previous_samples"></SamplesTable>
+        <SamplesTable
+          :samples="previous_samples"
+          :show_email="false"
+        ></SamplesTable>
       </template>
       <template v-else>
         <p>No previous samples.</p>

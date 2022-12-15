@@ -7,6 +7,7 @@ import type { Sample } from "@/utils/types";
 
 defineProps<{
   samples: Sample[];
+  show_email: boolean;
 }>();
 </script>
 
@@ -14,6 +15,7 @@ defineProps<{
   <table class="zebra">
     <tr>
       <th>Primary Key</th>
+      <th v-if="show_email">Email</th>
       <th>Sample Name</th>
       <th>Running Option</th>
       <th>Concentration</th>
@@ -22,6 +24,7 @@ defineProps<{
     </tr>
     <tr v-for="sample in samples" :key="sample.id">
       <td>{{ sample["primary_key"] }}</td>
+      <td v-if="show_email">{{ sample["email"] }}</td>
       <td>{{ sample["name"] }}</td>
       <td>{{ sample["running_option"] }}</td>
       <td>{{ sample["concentration"] }} ng/μl</td>
