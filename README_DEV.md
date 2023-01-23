@@ -96,7 +96,7 @@ built by CI that can be pulled, so all that is needed to deploy the latest versi
 
 ```
 sudo docker-compose pull
-sudo docker-compose up --build -d
+sudo docker-compose up -d
 ```
 
 The location of data directory, SSL keys and secret key should be set
@@ -114,6 +114,17 @@ The current status of the containers can be checked with
 ```
 sudo docker-compose ps
 sudo docker-compose logs
+```
+
+### Renew SSL certificate
+
+Certbot attempts to auto-renew but this requires port 80, which is already taken by our web server.
+To update the certificate manually:
+
+```
+sudo docker-compose down
+sudo certbot renew
+sudo docker-compose up -d
 ```
 
 ### Give users admin rights
