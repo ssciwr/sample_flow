@@ -347,12 +347,15 @@ def test_result_invalid(client):
         assert f"No {filetype} results available" in response.json
 
 
-def _upload_result(client, result_zipfile):
+def _upload_result(client, result_zipfile: pathlib.Path):
     headers = _get_auth_headers(client, "admin@embl.de", "admin")
+    primary_key = result_zipfile.stem[0:8]
     with open(result_zipfile, "rb") as f:
         response = client.post(
             "/api/admin/result",
             data={
+                "primary_key": primary_key,
+                "success": True,
                 "file": (io.BytesIO(f.read()), result_zipfile.name),
             },
             headers=headers,
@@ -363,7 +366,7 @@ def _upload_result(client, result_zipfile):
 def test_result_valid(client, result_zipfiles):
     headers = _get_auth_headers(client, "user@embl.de", "user")
     key = "22_46_A2"
-    _upload_result(client, result_zipfiles[0])
+    assert _upload_result(client, result_zipfiles[0]).status_code == 200
     for filetype in ["fasta", "gbk", "zip"]:
         response = client.post(
             "/api/result",

@@ -1,11 +1,9 @@
-from flask_sqlalchemy import SQLAlchemy
 import argon2
-from circuit_seq_server.model import User, Sample
+from circuit_seq_server.model import User, Sample, db
 import datetime
 
 
 def add_test_users(app):
-    db = SQLAlchemy(app)
     ph = argon2.PasswordHasher()
     with app.app_context():
         # add users for tests
@@ -23,7 +21,6 @@ def add_test_users(app):
 
 
 def add_test_samples(app):
-    db = SQLAlchemy(app)
     with app.app_context():
         # add samples for tests
         week = 46

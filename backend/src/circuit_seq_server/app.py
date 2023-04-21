@@ -23,6 +23,7 @@ from circuit_seq_server.model import (
     add_new_user,
     activate_user,
     add_new_sample,
+    get_samples,
     remaining_samples_this_week,
     get_current_settings,
     set_current_settings,
@@ -131,30 +132,7 @@ def create_app(data_path: str = "/circuit_seq_data"):
     @app.route("/api/samples", methods=["GET"])
     @jwt_required()
     def samples():
-        start_of_week = get_start_of_week()
-        current_samples = (
-            db.session.execute(
-                db.select(Sample)
-                .filter(Sample.email == current_user.email)
-                .filter(Sample.date >= start_of_week)
-                .order_by(db.desc("date"))
-            )
-            .scalars()
-            .all()
-        )
-        previous_samples = (
-            db.session.execute(
-                db.select(Sample)
-                .filter(Sample.email == current_user.email)
-                .filter(Sample.date < start_of_week)
-                .order_by(db.desc("date"))
-            )
-            .scalars()
-            .all()
-        )
-        return jsonify(
-            current_samples=current_samples, previous_samples=previous_samples
-        )
+        return jsonify(get_samples(current_user.email))
 
     @app.route("/api/reference_sequence", methods=["POST"])
     @jwt_required()
@@ -238,12 +216,7 @@ def create_app(data_path: str = "/circuit_seq_data"):
         reference_sequence_file = request.files.to_dict().get("file", None)
         logger.info(f"Adding sample {name} from {email}")
         new_sample, error_message = add_new_sample(
-            email,
-            name,
-            running_option,
-            concentration,
-            reference_sequence_file,
-            data_path,
+            email, name, running_option, concentration, reference_sequence_file
         )
         if new_sample is not None:
             logger.info(f"  - > success")
@@ -266,29 +239,7 @@ def create_app(data_path: str = "/circuit_seq_data"):
     def admin_all_samples():
         if not current_user.is_admin:
             return jsonify("Admin account required"), 401
-        year, week, day = datetime.date.today().isocalendar()
-        start_of_week = datetime.date.fromisocalendar(year, week, 1)
-        current_samples = (
-            db.session.execute(
-                db.select(Sample)
-                .filter(Sample.date >= start_of_week)
-                .order_by(db.desc("date"))
-            )
-            .scalars()
-            .all()
-        )
-        previous_samples = (
-            db.session.execute(
-                db.select(Sample)
-                .filter(Sample.date < start_of_week)
-                .order_by(db.desc("date"))
-            )
-            .scalars()
-            .all()
-        )
-        return jsonify(
-            current_samples=current_samples, previous_samples=previous_samples
-        )
+        return jsonify(get_samples())
 
     @app.route("/api/admin/zipsamples", methods=["POST"])
     @jwt_required()
@@ -298,7 +249,7 @@ def create_app(data_path: str = "/circuit_seq_data"):
         logger.info(
             f"Request for zipfile of samples from Admin user {current_user.email}"
         )
-        zip_file = update_samples_zipfile(data_path, datetime.date.today())
+        zip_file = update_samples_zipfile(datetime.date.today())
         return flask.send_file(zip_file, as_attachment=True)
 
     @app.route("/api/admin/users", methods=["GET"])
@@ -325,9 +276,19 @@ def create_app(data_path: str = "/circuit_seq_data"):
         if not current_user.is_admin:
             return jsonify("Admin account required"), 401
         email = current_user.email
+        form_as_dict = request.form.to_dict()
+        primary_key = form_as_dict.get("primary_key", "")
+        success = request.form.to_dict().get("success", None)
+        logger.info(f"Result upload for '{primary_key}' from user {email}")
+        if success is None or success.lower() not in ["true", "false"]:
+            logger.info(f"  -> missing success key")
+            return jsonify("Missing key: success=True/False"), 401
+        success = success.lower() == "true"
         zipfile = request.files.to_dict().get("file", None)
-        logger.info(f"Results uploaded by {email}")
-        message, code = process_result(zipfile, data_path)
+        if success is True and zipfile is None:
+            logger.info(f"  -> missing zipfile")
+            return jsonify("Result has success=True but no file"), 401
+        message, code = process_result(primary_key, success, zipfile)
         return jsonify(message=message), code
 
     with app.app_context():
