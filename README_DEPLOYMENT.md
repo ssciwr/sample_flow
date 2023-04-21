@@ -6,7 +6,7 @@ Some information on how to deploy the website - currently it is deployed on a he
 
 Production docker container images are automatically built by CI.
 To deploy the latest version on a virtual machine with docker-compose installed,
-download [https://raw.githubusercontent.com/ssciwr/circuit_seq/main/docker-compose.yml](docker-compose.yml), then do
+download [docker-compose.yml](https://raw.githubusercontent.com/ssciwr/circuit_seq/main/docker-compose.yml), then do
 
 ```
 sudo docker-compose pull

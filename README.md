@@ -39,15 +39,15 @@ Admins can also generate an API token,
 then do all of the above programatically using
 the provided REST API:
 
-- [api_examples.ipynb](https://github.com/ssciwr/circuit_seq/blob/main/notebooks/api_examples.ipynb))
+- [api_examples.ipynb](https://github.com/ssciwr/circuit_seq/blob/main/notebooks/api_examples.ipynb)
 
 ## Developer info
 
 If you want to make changes to the code, see
-[README_DEV.md](README_DEV.md)
+[README_DEV](README_DEV.md)
 for instructions on how to locally build make a test deployment of the website.
 
 ## Deployment info
 
 For information on how to deploy the website see
-[README_DEPLOYMENT.md](README_DEPLOYMENT.md).
+[README_DEPLOYMENT](README_DEPLOYMENT.md).
