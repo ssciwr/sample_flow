@@ -1,10 +1,10 @@
 # CircuitSeq Backend
 
-A work-in-progress Flask REST API prototype of the backend.
+The Flask REST API backend for [circuitseq.iwr.uni-heidelberg.de](https://circuitseq.iwr.uni-heidelberg.de/).
 
 Note: these are development install/use instructions, see
 [README_DEV.md](https://github.com/ssciwr/circuit_seq/blob/main/README_DEV.md)
-for instructions on running the full production docker-compose setup locally
+for instructions on running the full production docker-compose setup locally.
 
 ## Installation
 
