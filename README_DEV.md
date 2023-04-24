@@ -44,7 +44,7 @@ If this is not set or is less than 16 chars, a new random secret key is generate
 ### URL
 
 The website is then served at https://localhost/
-Note that the SSK keys are self-signed keys and your browser will still warn about the site being insecure.
+Note that the SSL keys are self-signed keys and your browser will still warn about the site being insecure.
 
 ### User signup activation email
 
