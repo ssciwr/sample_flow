@@ -31,34 +31,30 @@ function do_login() {
   <ListItem title="Login" icon="bi-person">
     <p>Log in with the email address and password you used to sign up:</p>
     <form @submit.prevent="do_login">
-      <table>
-        <tr>
-          <td style="text-align: right">Email:</td>
-          <td>
-            <input
-              v-model="login_email_address"
-              placeholder="your.name@uni-heidelberg.de"
-              maxlength="256"
-            />
-          </td>
-        </tr>
-        <tr>
-          <td style="text-align: right">Password:</td>
-          <td>
-            <input v-model="login_password" type="password" maxlength="256" />
-          </td>
-        </tr>
-        <tr>
-          <td></td>
-          <td style="font-style: italic">{{ login_error_message }}</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>
-            <input type="submit" />
-          </td>
-        </tr>
-      </table>
+      <p>
+        <label for="email">Email:</label>
+        <input
+          v-model="login_email_address"
+          id="email"
+          placeholder="your.name@uni-heidelberg.de"
+          maxlength="256"
+        />
+      </p>
+      <p>
+        <label for="password">Password:</label>
+        <input
+          v-model="login_password"
+          id="password"
+          type="password"
+          maxlength="256"
+        />
+      </p>
+      <p>
+        <input type="submit" />
+        <span class="error-message pad-left">
+          {{ login_error_message }}
+        </span>
+      </p>
     </form>
   </ListItem>
 </template>

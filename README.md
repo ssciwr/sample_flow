@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/ssciwr/circuit_seq/actions/workflows/ci.yml/badge.svg)](https://github.com/ssciwr/circuit_seq/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/ssciwr/circuit_seq/branch/main/graph/badge.svg?token=Z8fyKbjrHd)](https://codecov.io/gh/ssciwr/circuit_seq)
+[![sonar](https://sonarcloud.io/api/project_badges/measure?project=ssciwr_circuit_seq&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=ssciwr_circuit_seq)
 
 The source code for the [CircuitSEQ website](https://circuitseq.iwr.uni-heidelberg.de/).
 

@@ -78,15 +78,15 @@ def create_app(data_path: str = "/circuit_seq_data"):
             db.select(User).filter(User.email == email)
         ).scalar_one_or_none()
         if not user:
-            logger.info(f"  -> user not found")
+            logger.info("  -> user not found")
             return jsonify(message="Unknown email address"), 401
         if not user.activated:
-            logger.info(f"  -> user not activated")
+            logger.info("  -> user not activated")
             return jsonify(message="User account is not yet activated"), 401
         if not user.check_password(password):
-            logger.info(f"  -> wrong password")
+            logger.info("  -> wrong password")
             return jsonify(message="Incorrect password"), 401
-        logger.info(f"  -> returning JWT access token")
+        logger.info("  -> returning JWT access token")
         access_token = create_access_token(identity=user)
         return jsonify(user=user.as_dict(), access_token=access_token)
 
@@ -161,12 +161,12 @@ def create_app(data_path: str = "/circuit_seq_data"):
         )
         year, week, day = user_sample.date.isocalendar()
         filename = f"{data_path}/{year}/{week}/inputs/references/{user_sample.primary_key}_{user_sample.name}.fasta"
-        file = pathlib.Path(filename)
-        if not file.is_file():
-            logger.info(f"  -> fasta file {file} not found")
+        fasta_file = pathlib.Path(filename)
+        if not fasta_file.is_file():
+            logger.info(f"  -> fasta file {fasta_file} not found")
             return jsonify(message="Fasta file not found"), 401
-        logger.info(f"Returning fasta file {file}")
-        return flask.send_file(file, as_attachment=True)
+        logger.info(f"Returning fasta file {fasta_file}")
+        return flask.send_file(fasta_file, as_attachment=True)
 
     @app.route("/api/result", methods=["POST"])
     @jwt_required()
@@ -199,12 +199,12 @@ def create_app(data_path: str = "/circuit_seq_data"):
             return jsonify(message=f"No {filetype} results available"), 401
         year, week, day = user_sample.date.isocalendar()
         filename = f"{data_path}/{year}/{week}/results/{user_sample.primary_key}_{user_sample.name}.{filetype}"
-        file = pathlib.Path(filename)
-        if not file.is_file():
-            logger.info(f"  -> {filetype} file {file} not found")
+        requested_file = pathlib.Path(filename)
+        if not requested_file.is_file():
+            logger.info(f"  -> {filetype} file {requested_file} not found")
             return jsonify(message=f"Results {filetype} file not found"), 401
-        logger.info(f"Returning {filetype} file {file}")
-        return flask.send_file(file, as_attachment=True)
+        logger.info(f"Returning {filetype} file {requested_file}")
+        return flask.send_file(requested_file, as_attachment=True)
 
     @app.route("/api/sample", methods=["POST"])
     @jwt_required()

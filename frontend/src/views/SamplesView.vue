@@ -149,87 +149,75 @@ function add_sample() {
           fasta file containing a reference sequence:
         </p>
         <form @submit.prevent="add_sample">
-          <table>
-            <tr>
-              <td style="text-align: right">Sample name:</td>
-              <td>
-                <input
-                  v-model="new_sample_name"
-                  placeholder="pXYZ_ABC_c1"
-                  maxlength="128"
-                  :title="new_sample_name_message"
-                />
-              </td>
-              <td style="font-style: italic">
-                <template v-if="new_sample_name">
-                  {{ new_sample_name_message }}
-                </template>
-              </td>
-            </tr>
-            <tr v-if="running_options.length > 2">
-              <td style="text-align: right">Running option:</td>
-              <td>
-                <select v-model="new_running_option">
-                  <option v-for="running_option in running_options">
-                    {{ running_option }}
-                  </option>
-                </select>
-              </td>
-            </tr>
-            <tr>
-              <td style="text-align: right">Concentration (ng/μl):</td>
-              <td>
-                <input
-                  v-model="new_sample_concentration"
-                  type="number"
-                  :min="new_sample_concentration_min"
-                  :max="new_sample_concentration_max"
-                  placeholder="ng/μl"
-                  :title="new_sample_concentration_message"
-                />
-              </td>
-              <td style="font-style: italic">
-                {{ new_sample_concentration_message }}
-              </td>
-            </tr>
-            <tr>
-              <td style="text-align: right">Reference sequence (optional):</td>
-              <td>
-                <input
-                  type="file"
-                  name="file"
-                  @change="on_file_changed($event)"
-                  :key="file_input_key"
-                  title="Optionally upload a fasta file reference sequence"
-                />
-              </td>
-            </tr>
-            <tr>
-              <td></td>
-              <td>
-                <input
-                  type="submit"
-                  :disabled="
-                    new_sample_name_message.length +
-                      new_sample_concentration_message.length >
-                    0
-                  "
-                  :title="
-                    new_sample_name_message +
-                    '\n' +
-                    new_sample_concentration_message
-                  "
-                />
-              </td>
-            </tr>
-            <tr>
-              <td style="font-style: italic" colspan="2">
-                <template v-if="new_sample_error_message">
-                  {{ new_sample_error_message }}
-                </template>
-              </td>
-            </tr>
-          </table>
+          <p>
+            <label for="sample_name">Sample name:</label>
+            <input
+              v-model="new_sample_name"
+              id="sample_name"
+              placeholder="pXYZ_ABC_c1"
+              maxlength="128"
+              :title="new_sample_name_message"
+            />
+            <span class="error-message pad-left">
+              <template v-if="new_sample_name">
+                {{ new_sample_name_message }}
+              </template>
+            </span>
+          </p>
+          <p v-if="running_options.length > 2">
+            <label for="running_option">Running option:</label>
+            <select v-model="new_running_option" id="running_option">
+              <option v-for="running_option in running_options">
+                {{ running_option }}
+              </option>
+            </select>
+          </p>
+          <p>
+            <label for="conc">Concentration (ng/μl):</label>
+            <input
+              v-model="new_sample_concentration"
+              id="conc"
+              type="number"
+              :min="new_sample_concentration_min"
+              :max="new_sample_concentration_max"
+              placeholder="ng/μl"
+              :title="new_sample_concentration_message"
+            />
+            <span class="error-message pad-left">
+              {{ new_sample_concentration_message }}
+            </span>
+          </p>
+          <p>
+            <label for="ref_seq_file">Reference sequence (optional):</label>
+            <input
+              type="file"
+              id="ref_seq_file"
+              name="file"
+              @change="on_file_changed($event)"
+              :key="file_input_key"
+              title="Optionally upload a fasta file reference sequence"
+            />
+          </p>
+          <p>
+            <input
+              type="submit"
+              :disabled="
+                new_sample_name_message.length +
+                  new_sample_concentration_message.length >
+                0
+              "
+              :title="
+                new_sample_name_message +
+                '\n' +
+                new_sample_concentration_message
+              "
+            />
+          </p>
+          <div class="error-message">
+            <template v-if="new_sample_error_message">
+              {{ new_sample_error_message }}
+            </template>
+          </div>
         </form>
       </template>
       <template v-else>
