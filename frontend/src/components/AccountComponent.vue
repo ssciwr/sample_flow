@@ -38,10 +38,10 @@ function do_change_password() {
       new_password: new_password.value,
     })
     .then((response) => {
-      response_message.value = response.data;
+      response_message.value = response.data.message;
     })
     .catch((error) => {
-      response_message.value = error.response.data;
+      response_message.value = error.response.data.message;
     });
 }
 </script>

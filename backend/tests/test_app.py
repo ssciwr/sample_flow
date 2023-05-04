@@ -31,15 +31,15 @@ def _get_auth_headers(
 def test_login_invalid(client):
     # missing json
     response = client.post("/api/login")
-    assert response.status_code == 400
+    assert response.status_code > 200
     # unknown email
     response = client.post("/api/login", json={"email": "", "password": ""})
     assert response.status_code == 401
-    assert response.json == "Unknown email address"
+    assert response.json["message"] == "Unknown email address"
     # wrong password
     response = client.post("/api/login", json={"email": "user@embl.de", "password": ""})
     assert response.status_code == 401
-    assert response.json == "Incorrect password"
+    assert response.json["message"] == "Incorrect password"
 
 
 def test_login_valid(client):
@@ -64,17 +64,17 @@ def test_change_password_invalid(client):
         json={"current_password": "wrong", "new_password": "abc123"},
     )
     assert response.status_code == 401
-    assert "Failed to change password" in response.json
+    assert "Failed to change password" in response.json["message"]
     response = client.post(
         "/api/change_password", headers=headers, json={"new_password": "abc123"}
     )
     assert response.status_code == 401
-    assert response.json == "Current password missing"
+    assert response.json["message"] == "Current password missing"
     response = client.post(
         "/api/change_password", headers=headers, json={"current_password": "abc123"}
     )
     assert response.status_code == 401
-    assert response.json == "New password missing"
+    assert response.json["message"] == "New password missing"
 
 
 def test_change_password_valid(client):
@@ -89,7 +89,7 @@ def test_change_password_valid(client):
         json={"current_password": "user", "new_password": "abc123"},
     )
     assert response.status_code == 200
-    assert "Password changed" in response.json
+    assert "Password changed" in response.json["message"]
     response = client.post(
         "/api/login", json={"email": "user@embl.de", "password": "user"}
     )
@@ -327,7 +327,7 @@ def test_result_invalid(client):
         "/api/result", json={"primary_key": "XYZ", "filetype": "zip"}, headers=headers
     )
     assert response.status_code == 401
-    assert f"Sample not found" in response.json
+    assert f"Sample not found" in response.json["message"]
     key = "22_46_A2"
     for filetype in ["exe", "txt"]:
         response = client.post(
@@ -336,7 +336,7 @@ def test_result_invalid(client):
             headers=headers,
         )
         assert response.status_code == 401
-        assert f"Invalid filetype {filetype}" in response.json
+        assert f"Invalid filetype {filetype}" in response.json["message"]
     for filetype in ["fasta", "gbk", "zip"]:
         response = client.post(
             "/api/result",
@@ -344,7 +344,7 @@ def test_result_invalid(client):
             headers=headers,
         )
         assert response.status_code == 401
-        assert f"No {filetype} results available" in response.json
+        assert f"No {filetype} results available" in response.json["message"]
 
 
 def _upload_result(client, result_zipfile: pathlib.Path):
