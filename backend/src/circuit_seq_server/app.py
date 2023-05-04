@@ -1,5 +1,4 @@
 from __future__ import annotations
-from __future__ import annotations
 
 import os
 import secrets
@@ -15,7 +14,6 @@ from flask_jwt_extended import jwt_required
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from circuit_seq_server.logger import get_logger
-from circuit_seq_server.utils import get_start_of_week
 from circuit_seq_server.model import (
     db,
     Sample,
@@ -53,7 +51,7 @@ def create_app(data_path: str = "/circuit_seq_data"):
     app.config["MAX_CONTENT_LENGTH"] = 384 * 1024 * 1024
     app.config["CIRCUITSEQ_DATA_PATH"] = data_path
 
-    CORS(app)  # todo: limit ports / routes
+    CORS(app)
 
     jwt = JWTManager(app)
     db.init_app(app)
@@ -81,13 +79,13 @@ def create_app(data_path: str = "/circuit_seq_data"):
         ).scalar_one_or_none()
         if not user:
             logger.info(f"  -> user not found")
-            return jsonify("Unknown email address"), 401
+            return jsonify(message="Unknown email address"), 401
         if not user.activated:
             logger.info(f"  -> user not activated")
-            return jsonify("User account is not yet activated"), 401
+            return jsonify(message="User account is not yet activated"), 401
         if not user.check_password(password):
             logger.info(f"  -> wrong password")
-            return jsonify("Incorrect password"), 401
+            return jsonify(message="Incorrect password"), 401
         logger.info(f"  -> returning JWT access token")
         access_token = create_access_token(identity=user)
         return jsonify(user=user.as_dict(), access_token=access_token)
@@ -110,14 +108,17 @@ def create_app(data_path: str = "/circuit_seq_data"):
     def change_password():
         current_password = request.json.get("current_password", None)
         if current_password is None:
-            return jsonify("Current password missing"), 401
+            return jsonify(message="Current password missing"), 401
         new_password = request.json.get("new_password", None)
         if new_password is None:
-            return jsonify("New password missing"), 401
+            return jsonify(message="New password missing"), 401
         logger.info(f"Password change request from {current_user.email}")
         if current_user.set_password(current_password, new_password):
-            return jsonify("Password changed.")
-        return jsonify("Failed to change password: current password incorrect."), 401
+            return jsonify(message="Password changed.")
+        return (
+            jsonify(message="Failed to change password: current password incorrect."),
+            401,
+        )
 
     @app.route("/api/remaining", methods=["GET"])
     def remaining():
@@ -132,7 +133,7 @@ def create_app(data_path: str = "/circuit_seq_data"):
     @app.route("/api/samples", methods=["GET"])
     @jwt_required()
     def samples():
-        return jsonify(get_samples(current_user.email))
+        return get_samples(current_user.email)
 
     @app.route("/api/reference_sequence", methods=["POST"])
     @jwt_required()
@@ -149,12 +150,12 @@ def create_app(data_path: str = "/circuit_seq_data"):
         ).scalar_one_or_none()
         if user_sample is None:
             logger.info(f"  -> sample with key {primary_key} not found")
-            return jsonify("Sample not found"), 401
+            return jsonify(message="Sample not found"), 401
         if user_sample.reference_sequence_description is None:
             logger.info(
                 f"  -> sample with key {primary_key} found but does not contain a reference sequence"
             )
-            return jsonify("Sample does not contain a reference sequence"), 401
+            return jsonify(message="Sample does not contain a reference sequence"), 401
         logger.info(
             f"  -> found reference sequence with description {user_sample.reference_sequence_description}"
         )
@@ -163,7 +164,7 @@ def create_app(data_path: str = "/circuit_seq_data"):
         file = pathlib.Path(filename)
         if not file.is_file():
             logger.info(f"  -> fasta file {file} not found")
-            return jsonify("Fasta file not found"), 401
+            return jsonify(message="Fasta file not found"), 401
         logger.info(f"Returning fasta file {file}")
         return flask.send_file(file, as_attachment=True)
 
@@ -174,7 +175,7 @@ def create_app(data_path: str = "/circuit_seq_data"):
         filetype = request.json.get("filetype", None)
         if filetype not in ["fasta", "gbk", "zip"]:
             logger.info(f"  -> invalid filetype {filetype} requested")
-            return jsonify(f"Invalid filetype {filetype} requested"), 401
+            return jsonify(message=f"Invalid filetype {filetype} requested"), 401
         logger.info(
             f"User {current_user.email} requesting {filetype} results for key {primary_key}"
         )
@@ -186,7 +187,7 @@ def create_app(data_path: str = "/circuit_seq_data"):
         ).scalar_one_or_none()
         if user_sample is None:
             logger.info(f"  -> sample with key {primary_key} not found")
-            return jsonify("Sample not found"), 401
+            return jsonify(message="Sample not found"), 401
         if (
             (filetype == "fasta" and not user_sample.has_results_fasta)
             or (filetype == "gbk" and not user_sample.has_results_gbk)
@@ -195,13 +196,13 @@ def create_app(data_path: str = "/circuit_seq_data"):
             logger.info(
                 f"  -> sample with key {primary_key} found but no {filetype} results available"
             )
-            return jsonify(f"No {filetype} results available"), 401
+            return jsonify(message=f"No {filetype} results available"), 401
         year, week, day = user_sample.date.isocalendar()
         filename = f"{data_path}/{year}/{week}/results/{user_sample.primary_key}_{user_sample.name}.{filetype}"
         file = pathlib.Path(filename)
         if not file.is_file():
             logger.info(f"  -> {filetype} file {file} not found")
-            return jsonify(f"Results {filetype} file not found"), 401
+            return jsonify(message=f"Results {filetype} file not found"), 401
         logger.info(f"Returning {filetype} file {file}")
         return flask.send_file(file, as_attachment=True)
 
@@ -227,7 +228,7 @@ def create_app(data_path: str = "/circuit_seq_data"):
     @jwt_required()
     def admin_settings():
         if not current_user.is_admin:
-            return jsonify("Admin account required"), 401
+            return jsonify(message="Admin account required"), 401
         if flask.request.method == "POST":
             message, code = set_current_settings(current_user.email, request.json)
             return jsonify(message=message), code
@@ -238,14 +239,14 @@ def create_app(data_path: str = "/circuit_seq_data"):
     @jwt_required()
     def admin_all_samples():
         if not current_user.is_admin:
-            return jsonify("Admin account required"), 401
+            return jsonify(message="Admin account required"), 401
         return jsonify(get_samples())
 
     @app.route("/api/admin/zipsamples", methods=["POST"])
     @jwt_required()
     def admin_zip_samples():
         if not current_user.is_admin:
-            return jsonify("Admin account required"), 401
+            return jsonify(message="Admin account required"), 401
         logger.info(
             f"Request for zipfile of samples from Admin user {current_user.email}"
         )
@@ -258,7 +259,7 @@ def create_app(data_path: str = "/circuit_seq_data"):
         if current_user.is_admin:
             users = db.session.execute(db.select(User)).scalars().all()
             return jsonify(users=[user.as_dict() for user in users])
-        return jsonify("Admin account required"), 401
+        return jsonify(message="Admin account required"), 401
 
     @app.route("/api/admin/token", methods=["GET"])
     @jwt_required()
@@ -268,13 +269,13 @@ def create_app(data_path: str = "/circuit_seq_data"):
                 identity=current_user, expires_delta=datetime.timedelta(weeks=26)
             )
             return jsonify(access_token=access_token)
-        return jsonify("Admin account required"), 401
+        return jsonify(message="Admin account required"), 401
 
     @app.route("/api/admin/result", methods=["POST"])
     @jwt_required()
     def admin_upload_result():
         if not current_user.is_admin:
-            return jsonify("Admin account required"), 401
+            return jsonify(message="Admin account required"), 401
         email = current_user.email
         form_as_dict = request.form.to_dict()
         primary_key = form_as_dict.get("primary_key", "")
@@ -282,12 +283,12 @@ def create_app(data_path: str = "/circuit_seq_data"):
         logger.info(f"Result upload for '{primary_key}' from user {email}")
         if success is None or success.lower() not in ["true", "false"]:
             logger.info(f"  -> missing success key")
-            return jsonify("Missing key: success=True/False"), 401
+            return jsonify(message="Missing key: success=True/False"), 401
         success = success.lower() == "true"
         zipfile = request.files.to_dict().get("file", None)
         if success is True and zipfile is None:
             logger.info(f"  -> missing zipfile")
-            return jsonify("Result has success=True but no file"), 401
+            return jsonify(message="Result has success=True but no file"), 401
         message, code = process_result(primary_key, success, zipfile)
         return jsonify(message=message), code
 

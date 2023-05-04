@@ -20,7 +20,7 @@ function do_login() {
       userStore.token = response.data.access_token;
     })
     .catch((error) => {
-      login_error_message.value = `Login failed: ${error.response.data}`;
+      login_error_message.value = `Login failed: ${error.response.data.message}`;
       userStore.user = null;
       userStore.token = "";
     });
