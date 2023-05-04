@@ -425,10 +425,11 @@ def add_new_user(email: str, password: str, is_admin: bool) -> Tuple[str, int]:
 
 
 def activate_user(token: str) -> Tuple[str, int]:
-    logger.info(f"Activate request for token {token}")
+    logger.info("Activation request")
     secret_key = flask.current_app.config["JWT_SECRET_KEY"]
     email = decode_activation_token(token, secret_key)
     if email is None:
+        logger.info("  -> Invalid token")
         return "Invalid or expired activation link", 401
     logger.info(f"  -> email '{email}'")
     user = db.session.execute(
@@ -438,7 +439,7 @@ def activate_user(token: str) -> Tuple[str, int]:
         logger.info(f"  -> Unknown email address '{email}'")
         return f"Unknown email address {email}", 401
     if user.activated is True:
-        logger.info(f"  -> user with email {email} already activated")
+        logger.info(f"  -> User with email {email} already activated")
         return f"Account for {email} is already activated", 401
     user.activated = True
     db.session.commit()

@@ -12,7 +12,7 @@ defineProps<{
 </script>
 
 <template>
-  <table class="zebra">
+  <table class="zebra" aria-label="Samples">
     <tr>
       <th>Primary Key</th>
       <th v-if="show_email">Email</th>

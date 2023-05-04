@@ -43,54 +43,47 @@ function do_signup() {
       Heidelberg Uni, EMBL or DKFZ email address and choosing a password:
     </p>
     <form @submit.prevent="do_signup">
-      <table>
-        <tr>
-          <td style="text-align: right">Email:</td>
-          <td>
-            <input
-              v-model="signup_email_address"
-              placeholder="your.name@uni-heidelberg.de"
-              :title="signup_email_address_message"
-              maxlength="256"
-            />
-          </td>
-          <td style="font-style: italic">
-            {{ signup_email_address_message }}
-          </td>
-        </tr>
-        <tr>
-          <td style="text-align: right">Password:</td>
-          <td>
-            <input
-              v-model="signup_password"
-              type="password"
-              placeholder="password"
-              :title="signup_password_message"
-              maxlength="256"
-            />
-          </td>
-          <td style="font-style: italic">{{ signup_password_message }}</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>
-            <input
-              type="submit"
-              :title="
-                signup_email_address_message + ' ' + signup_password_message
-              "
-              :disabled="
-                signup_email_address_message.length +
-                  signup_password_message.length >
-                0
-              "
-            />
-          </td>
-        </tr>
-      </table>
+      <div>
+        <label for="email">Email:</label>
+        <input
+          v-model="signup_email_address"
+          id="email"
+          placeholder="your.name@uni-heidelberg.de"
+          :title="signup_email_address_message"
+          maxlength="256"
+        />
+        <span class="error-message pad-left">{{
+          signup_email_address_message
+        }}</span>
+      </div>
+      <p>
+        <label for="password">Password:</label>
+        <input
+          v-model="signup_password"
+          id="password"
+          type="password"
+          placeholder="password"
+          :title="signup_password_message"
+          maxlength="256"
+        />
+        <span class="error-message pad-left">{{
+          signup_password_message
+        }}</span>
+      </p>
+      <p>
+        <input
+          type="submit"
+          :title="signup_email_address_message + ' ' + signup_password_message"
+          :disabled="
+            signup_email_address_message.length +
+              signup_password_message.length >
+            0
+          "
+        />
+      </p>
     </form>
-    <p style="font-style: italic">
+    <div class="message">
       {{ signup_response_message }}
-    </p>
+    </div>
   </ListItem>
 </template>

@@ -63,63 +63,53 @@ function do_change_password() {
   </ListItem>
   <ListItem title="Change password" icon="bi-key">
     <form @submit.prevent="do_change_password">
-      <table>
-        <tr>
-          <td style="text-align: right">Current Password:</td>
-          <td>
-            <input
-              v-model="current_password"
-              type="password"
-              placeholder="current password"
-              maxlength="256"
-            />
-          </td>
-        </tr>
-        <tr>
-          <td style="text-align: right">New Password:</td>
-          <td>
-            <input
-              v-model="new_password"
-              type="password"
-              placeholder="new password"
-              :title="new_password_message"
-              maxlength="256"
-            />
-          </td>
-          <td style="font-style: italic">{{ new_password_message }}</td>
-        </tr>
-        <tr>
-          <td style="text-align: right">Confirm New Password:</td>
-          <td>
-            <input
-              v-model="new_password2"
-              type="password"
-              placeholder="new password"
-              :title="new_password2_message"
-              maxlength="256"
-            />
-          </td>
-          <td style="font-style: italic">{{ new_password2_message }}</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>
-            <input
-              type="submit"
-              :title="new_password_message + ' ' + new_password2_message"
-              :disabled="
-                current_password.length === 0 ||
-                new_password.length === 0 ||
-                new_password2.length === 0 ||
-                new_password_message.length + new_password2_message.length > 0
-              "
-            />
-          </td>
-        </tr>
-      </table>
+      <p>
+        <label for="passwd_old">Current Password:</label>
+        <input
+          v-model="current_password"
+          id="passwd_old"
+          type="password"
+          placeholder="current password"
+          maxlength="256"
+        />
+      </p>
+      <p>
+        <label for="passwd_new">New Password:</label>
+        <input
+          v-model="new_password"
+          id="passwd_new"
+          type="password"
+          placeholder="new password"
+          :title="new_password_message"
+          maxlength="256"
+        />
+        <span class="error-message pad-left">{{ new_password_message }}</span>
+      </p>
+      <p>
+        <label for="passwd_new2">Confirm New Password:</label>
+        <input
+          v-model="new_password2"
+          id="passwd_new2"
+          type="password"
+          placeholder="new password"
+          :title="new_password2_message"
+          maxlength="256"
+        />
+        <span class="error-message pad-left">{{ new_password2_message }}</span>
+      </p>
+      <input
+        type="submit"
+        :title="new_password_message + ' ' + new_password2_message"
+        :disabled="
+          current_password.length === 0 ||
+          new_password.length === 0 ||
+          new_password2.length === 0 ||
+          new_password_message.length + new_password2_message.length > 0
+        "
+      />
     </form>
-    <p style="font-style: italic">
+    <div class="message">
       {{ response_message }}
-    </p>
+    </div>
   </ListItem>
 </template>

@@ -136,42 +136,41 @@ function upload_result() {
     <ListItem title="Upload result" icon="bi-gear">
       <p>Upload a result zipfile:</p>
       <form @submit.prevent="upload_result">
-        <table>
-          <tr>
-            <td style="text-align: right">Primary key:</td>
-            <td>
-              <input
-                v-model="upload_primary_key"
-                maxlength="256"
-                placeholder="23_01_A1"
-              />
-            </td>
-          </tr>
-          <tr>
-            <td style="text-align: right">Successful:</td>
-            <td><input type="checkbox" v-model="upload_success" /></td>
-          </tr>
-          <tr>
-            <td style="text-align: right">Results zipfile:</td>
-            <td>
-              <input
-                type="file"
-                name="file"
-                @change="update_upload_file($event)"
-              />
-            </td>
-          </tr>
-          <tr>
-            <td></td>
-            <td>
-              <button :disabled="!upload_button_enabled">Upload</button>
-            </td>
-          </tr>
-        </table>
+        <p>
+          <label for="upload_key">Primary key:</label>
+          <input
+            v-model="upload_primary_key"
+            id="upload_key"
+            maxlength="256"
+            placeholder="23_01_A1"
+          />
+        </p>
+        <p>
+          <label for="checkbox_success">Successful:</label>
+          <input
+            type="checkbox"
+            id="checkbox_success"
+            v-model="upload_success"
+          />
+        </p>
+        <p>
+          <label for="upload_input">Results zipfile:</label>
+          <input
+            type="file"
+            id="upload_input"
+            name="file"
+            @change="update_upload_file($event)"
+          />
+        </p>
+        <input
+          type="submit"
+          value="Upload result"
+          :disabled="!upload_button_enabled"
+        />
       </form>
-      <p style="font-style: italic">
+      <div class="message">
         {{ upload_result_message }}
-      </p>
+      </div>
     </ListItem>
     <ListItem title="Generate API Token" icon="bi-gear">
       <p>
@@ -186,7 +185,11 @@ function upload_result() {
       </p>
     </ListItem>
     <ListItem title="Settings" icon="bi-gear">
-      <table>
+      <table class="zebra" aria-label="Settings for the CircuitSeq website">
+        <tr>
+          <th>Setting</th>
+          <th>Value</th>
+        </tr>
         <tr>
           <td>Plate num rows:</td>
           <td>
@@ -257,7 +260,7 @@ function upload_result() {
     </ListItem>
     <ListItem title="Users" icon="bi-gear">
       <p>{{ users.length }} registered users:</p>
-      <table class="zebra">
+      <table class="zebra" aria-label="Registered users">
         <tr>
           <th>Id</th>
           <th>Email</th>
