@@ -32,19 +32,19 @@ function do_login() {
     <p>Log in with the email address and password you used to sign up:</p>
     <form @submit.prevent="do_login">
       <p>
-        <label for="email">Email:</label>
+        <label for="login_email">Email:</label>
         <input
           v-model="login_email_address"
-          id="email"
+          id="login_email"
           placeholder="your.name@uni-heidelberg.de"
           maxlength="256"
         />
       </p>
       <p>
-        <label for="password">Password:</label>
+        <label for="login_password">Password:</label>
         <input
           v-model="login_password"
-          id="password"
+          id="login_password"
           type="password"
           maxlength="256"
         />

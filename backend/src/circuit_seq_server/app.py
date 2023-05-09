@@ -19,6 +19,7 @@ from circuit_seq_server.model import (
     Sample,
     User,
     add_new_user,
+    reset_user_password,
     activate_user,
     add_new_sample,
     get_samples,
@@ -27,6 +28,7 @@ from circuit_seq_server.model import (
     set_current_settings,
     update_samples_zipfile,
     process_result,
+    send_password_reset_email,
 )
 
 
@@ -101,6 +103,25 @@ def create_app(data_path: str = "/circuit_seq_data"):
     @app.route("/api/activate/<token>")
     def activate(token: str):
         message, code = activate_user(token)
+        return jsonify(message=message), code
+
+    @app.route("/api/request_password_reset", methods=["POST"])
+    def request_password_reset():
+        message, code = send_password_reset_email(request.json.get("email", ""))
+        return jsonify(message=message), code
+
+    @app.route("/api/reset_password", methods=["POST"])
+    def reset_password():
+        token = request.json.get("reset_token", None)
+        if token is None:
+            return jsonify(message="Reset token missing"), 401
+        email = request.json.get("email", None)
+        if email is None:
+            return jsonify(message="Email address missing"), 401
+        new_password = request.json.get("new_password", None)
+        if new_password is None:
+            return jsonify(message="New password missing"), 401
+        message, code = reset_user_password(token, email, new_password)
         return jsonify(message=message), code
 
     @app.route("/api/change_password", methods=["POST"])

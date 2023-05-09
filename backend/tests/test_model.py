@@ -4,6 +4,7 @@ import datetime
 import pathlib
 from freezegun import freeze_time
 from werkzeug.datastructures import FileStorage
+import secrets
 
 
 def _count_settings() -> int:
@@ -200,7 +201,10 @@ def test_add_new_user_valid(app):
         email_msg = app.config["TESTING_ONLY_LAST_SMTP_MESSAGE"]
         assert email_msg["To"] == email
         # extract activation token from email contents
-        activation_token = email_msg.get_content().split("/")[-1].strip()
+        body = str(email_msg.get_body()).replace("=\n", "")
+        activation_token = body.split(
+            "https://circuitseq.iwr.uni-heidelberg.de/activate/"
+        )[1].split("\n")[0]
         # check password pre-activation
         assert user.check_password("wrong") is False
         assert user.check_password(password) is True
@@ -290,3 +294,51 @@ def test_process_result_invalid(app, result_zipfiles):
             )
         assert code == 401
         assert "file" in message
+
+
+def test_send_password_reset_email_invalid(app):
+    with app.app_context():
+        email = "invalid@embl.de"
+        model.send_password_reset_email(email)
+        last_email_msg = app.config.get("TESTING_ONLY_LAST_SMTP_MESSAGE")
+        assert last_email_msg is not None
+        assert last_email_msg["To"] == email
+        body = str(last_email_msg.get_body()).replace("=\n", "")
+        # no reset url in email
+        assert "https://circuitseq.iwr.uni-heidelberg.de/reset_password/" not in body
+        assert "no circuitseq account was found for this address" in body.lower()
+
+
+def test_reset_password(app):
+    with app.app_context():
+        email = "user@embl.de"
+        new_password = secrets.token_urlsafe()
+        model.send_password_reset_email(email)
+        last_email_msg = app.config.get("TESTING_ONLY_LAST_SMTP_MESSAGE")
+        assert last_email_msg is not None
+        assert last_email_msg["To"] == email
+        body = str(last_email_msg.get_body()).replace("=\n", "")
+        # extract reset token from email contents
+        reset_token = body.split(
+            "https://circuitseq.iwr.uni-heidelberg.de/reset_password/"
+        )[1].split("\n")[0]
+        # use incorrect token
+        msg, code = model.reset_user_password("wrongtoken", email, new_password)
+        assert "invalid" in msg.lower()
+        assert code == 401
+        # use incorrect email
+        msg, code = model.reset_user_password(
+            reset_token, "wrong@email.com", new_password
+        )
+        assert "invalid" in msg.lower()
+        assert code == 401
+        # use correct token & email
+        msg, code = model.reset_user_password(reset_token, email, new_password)
+        assert "password changed" in msg.lower()
+        assert code == 200
+        user = model.db.session.execute(
+            model.db.select(model.User).filter(model.User.email == email)
+        ).scalar_one_or_none()
+        assert user is not None
+        assert user.email == email
+        assert user.check_password(new_password) is True

@@ -44,10 +44,10 @@ function do_signup() {
     </p>
     <form @submit.prevent="do_signup">
       <div>
-        <label for="email">Email:</label>
+        <label for="signup_email">Email:</label>
         <input
           v-model="signup_email_address"
-          id="email"
+          id="signup_email"
           placeholder="your.name@uni-heidelberg.de"
           :title="signup_email_address_message"
           maxlength="256"
@@ -57,10 +57,10 @@ function do_signup() {
         }}</span>
       </div>
       <p>
-        <label for="password">Password:</label>
+        <label for="signup_password">Password:</label>
         <input
           v-model="signup_password"
-          id="password"
+          id="signup_password"
           type="password"
           placeholder="password"
           :title="signup_password_message"

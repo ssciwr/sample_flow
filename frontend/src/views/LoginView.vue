@@ -3,6 +3,7 @@ import { useUserStore } from "@/stores/user";
 import LoginComponent from "@/components/LoginComponent.vue";
 import SignupComponent from "@/components/SignupComponent.vue";
 import AccountComponent from "@/components/AccountComponent.vue";
+import ResetComponent from "@/components/ResetComponent.vue";
 const userStore = useUserStore();
 </script>
 
@@ -14,6 +15,7 @@ const userStore = useUserStore();
     <template v-else>
       <LoginComponent></LoginComponent>
       <SignupComponent></SignupComponent>
+      <ResetComponent></ResetComponent>
     </template>
   </main>
 </template>
