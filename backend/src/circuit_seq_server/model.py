@@ -18,7 +18,12 @@ from circuit_seq_server.utils import get_primary_key
 from circuit_seq_server.utils import get_start_of_week
 from circuit_seq_server.utils import parse_seq_to_fasta
 import csv
-from circuit_seq_server.utils import encode_activation_token, decode_activation_token
+from circuit_seq_server.utils import (
+    encode_activation_token,
+    decode_activation_token,
+    encode_password_reset_token,
+    decode_password_reset_token,
+)
 
 db = SQLAlchemy()
 ph = argon2.PasswordHasher()
@@ -198,36 +203,47 @@ def get_samples(email: Optional[str] = None) -> Dict[str, List[Sample]]:
     return samples
 
 
+def _new_email_message(email: str) -> EmailMessage:
+    msg = EmailMessage()
+    msg["From"] = "no-reply@circuitseq.iwr.uni-heidelberg.de"
+    msg["To"] = email
+    return msg
+
+
+def _wrap_email_message(email: str, message: str) -> str:
+    return f"Dear {email},\n\n{message}\n\nBest wishes,\n\nCircuitSEQ Team.\nhttps://circuitseq.iwr.uni-heidelberg.de"
+
+
+def _send_email_message(email_message: EmailMessage) -> None:
+    postfix_server_address = "email:587"
+    with smtplib.SMTP(postfix_server_address) as s:
+        s.send_message(email_message)
+
+
 def _send_result_email(sample: Sample, success: bool) -> Tuple[str, int]:
-    message_head = (
-        f"Dear {sample.email},\n\n"
-        f"Your sample {sample.primary_key}_{sample.name} has been processed"
-    )
+    message_head = f"Your sample {sample.primary_key}_{sample.name} has been processed"
     if success:
         message_body = (
             f" and the results are attached to this email.\n\n"
             f"You can also download the full analysis data by "
-            f"logging in to your account at https://circuitseq.iwr.uni-heidelberg.de\n\n"
+            f"logging in to your account at https://circuitseq.iwr.uni-heidelberg.de"
         )
     else:
         message_body = (
             f", however no correct de-novo assembly has been determined.\n\n"
-            f"Please consider handing in this sample next week again.\n\n"
+            f"Please consider handing in this sample next week again."
         )
-    message_tail = (
-        "Best wishes,\n\nCircuitSEQ Team.\nhttps://circuitseq.iwr.uni-heidelberg.de"
-    )
     try:
         logger.info(
             f"Sending {sample.primary_key} success={success} result email to {sample.email}"
         )
-        msg = EmailMessage()
-        msg.set_content(f"{message_head}{message_body}{message_tail}")
+        msg = _new_email_message(sample.email)
+        msg.set_content(
+            _wrap_email_message(sample.email, f"{message_head}{message_body}")
+        )
         msg[
             "Subject"
         ] = f"CircuitSEQ results for sample {sample.primary_key}_{sample.name}"
-        msg["From"] = "no-reply@circuitseq.iwr.uni-heidelberg.de"
-        msg["To"] = sample.email
         if success is True:
             for filetype in ["fasta", "gbk"]:
                 result_file = sample.results_file_path(filetype)
@@ -239,8 +255,7 @@ def _send_result_email(sample: Sample, success: bool) -> Tuple[str, int]:
                     subtype="octet-stream",
                     filename=result_file.split("/")[-1],
                 )
-        with smtplib.SMTP("email:587") as s:
-            s.send_message(msg)
+        _send_email_message(msg)
     except Exception as e:
         logger.warning(f"  --> failed to send result email: {e}")
         return (
@@ -332,10 +347,13 @@ class User(db.Model):
     activated = db.Column(db.Boolean, nullable=False)
     is_admin = db.Column(db.Boolean, nullable=False)
 
+    def set_password_nocheck(self, new_password: str):
+        self.password_hash = ph.hash(new_password)
+        db.session.commit()
+
     def set_password(self, current_password: str, new_password: str) -> bool:
         if self.check_password(current_password):
-            self.password_hash = ph.hash(new_password)
-            db.session.commit()
+            self.set_password_nocheck(new_password)
             return True
         return False
 
@@ -371,15 +389,46 @@ def _send_activation_email(email: str):
     token = encode_activation_token(email, secret_key)
     url = f"https://circuitseq.iwr.uni-heidelberg.de/activate/{token}"
     logger.info(f"Activation url: {url}")
-    msg = EmailMessage()
-    msg.set_content(
-        f"To activate your CircuitSEQ account, please confirm your email address by clicking on the following link:\n\n{url}"
+    msg = _new_email_message(email)
+    msg_body = (
+        f"To activate your CircuitSEQ account,"
+        f"please confirm your email address by clicking on the following link:\n\n"
+        f"{url}\n\n"
+        f"If you did not sign up for an account please disregard this email."
     )
+    msg.set_content(_wrap_email_message(email, msg_body))
     msg["Subject"] = "CircuitSEQ account activation"
-    msg["From"] = "no-reply@circuitseq.iwr.uni-heidelberg.de"
-    msg["To"] = email
-    with smtplib.SMTP("email:587") as s:
-        s.send_message(msg)
+    _send_email_message(msg)
+
+
+def send_password_reset_email(email: str) -> Tuple[str, int]:
+    user = db.session.execute(
+        db.select(User).filter(User.email == email)
+    ).scalar_one_or_none()
+    msg = _new_email_message(email)
+    if user is None:
+        logger.info(f"  -> Unknown email address '{email}'")
+        msg_body = (
+            f"A password reset request was made for this email address, "
+            f"but no CircuitSEQ account was found for this address.\n\n"
+            f"Maybe you signed up with a different email address?\n\n"
+            f"If you did not make this password reset request please disregard this email."
+        )
+    else:
+        secret_key = flask.current_app.config["JWT_SECRET_KEY"]
+        token = encode_password_reset_token(email, secret_key)
+        url = f"https://circuitseq.iwr.uni-heidelberg.de/reset_password/{token}"
+        logger.info(f"Password reset url: {url}")
+        msg_body = (
+            f"To reset the password for your CircuitSEQ account, "
+            f"please click on the following link (valid for 1 hour):\n\n"
+            f"{url}\n\n"
+            f"If you did not make this password reset request please disregard this email."
+        )
+    msg.set_content(_wrap_email_message(email, msg_body))
+    msg["Subject"] = "CircuitSEQ password reset"
+    _send_email_message(msg)
+    return f"Sent password reset email to '{email}'", 200
 
 
 def add_new_user(email: str, password: str, is_admin: bool) -> Tuple[str, int]:
@@ -444,6 +493,31 @@ def activate_user(token: str) -> Tuple[str, int]:
     user.activated = True
     db.session.commit()
     return f"Account {email} activated", 200
+
+
+def reset_user_password(token: str, email: str, new_password: str) -> Tuple[str, int]:
+    logger.info(f"Password reset request for {email}")
+    secret_key = flask.current_app.config["JWT_SECRET_KEY"]
+    decoded_email = decode_password_reset_token(token, secret_key)
+    if decoded_email is None:
+        logger.info("  -> Invalid token")
+        return "Invalid or expired password reset link", 401
+    logger.info(f"  -> decoded_email '{email}'")
+    if email.lower() != decoded_email.lower():
+        logger.info(
+            f"  -> Supplied email '{email}' doesn't match decoded one '{decoded_email}'"
+        )
+        return "Invalid email address", 401
+    user = db.session.execute(
+        db.select(User).filter(User.email == email)
+    ).scalar_one_or_none()
+    if user is None:
+        logger.info(f"  -> Unknown email address '{email}'")
+        return f"Unknown email address {email}", 401
+    user.set_password_nocheck(new_password)
+    db.session.commit()
+    logger.info(f"  -> Password changed for {email}")
+    return f"Password changed", 200
 
 
 def add_new_sample(

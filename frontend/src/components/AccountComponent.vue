@@ -64,20 +64,20 @@ function do_change_password() {
   <ListItem title="Change password" icon="bi-key">
     <form @submit.prevent="do_change_password">
       <p>
-        <label for="passwd_old">Current Password:</label>
+        <label for="account_passwd_old">Current Password:</label>
         <input
           v-model="current_password"
-          id="passwd_old"
+          id="account_passwd_old"
           type="password"
           placeholder="current password"
           maxlength="256"
         />
       </p>
       <p>
-        <label for="passwd_new">New Password:</label>
+        <label for="account_passwd_new">New Password:</label>
         <input
           v-model="new_password"
-          id="passwd_new"
+          id="account_passwd_new"
           type="password"
           placeholder="new password"
           :title="new_password_message"
@@ -86,10 +86,10 @@ function do_change_password() {
         <span class="error-message pad-left">{{ new_password_message }}</span>
       </p>
       <p>
-        <label for="passwd_new2">Confirm New Password:</label>
+        <label for="account_passwd_new2">Confirm New Password:</label>
         <input
           v-model="new_password2"
-          id="passwd_new2"
+          id="account_passwd_new2"
           type="password"
           placeholder="new password"
           :title="new_password2_message"
