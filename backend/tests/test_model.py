@@ -1,5 +1,5 @@
 from __future__ import annotations
-import circuit_seq_server.model as model
+import sample_flow_server.model as model
 import datetime
 import pathlib
 from freezegun import freeze_time
@@ -306,7 +306,7 @@ def test_send_password_reset_email_invalid(app):
         body = str(last_email_msg.get_body()).replace("=\n", "")
         # no reset url in email
         assert "https://circuitseq.iwr.uni-heidelberg.de/reset_password/" not in body
-        assert "no circuitseq account was found for this address" in body.lower()
+        assert "no sampleflow account was found for this address" in body.lower()
 
 
 def test_reset_password(app):

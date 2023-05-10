@@ -1,5 +1,5 @@
 {
-  "name": "circuit_seq",
+  "name": "sample_flow",
   "version": "0.0.0",
   "scripts": {
     "dev": "vite",

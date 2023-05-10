@@ -1,4 +1,4 @@
-# CircuitSEQ website deployment info
+# SampleFlow website deployment info
 
 Some information on how to deploy the website - currently it is deployed on a heicloud VM.
 
@@ -6,7 +6,7 @@ Some information on how to deploy the website - currently it is deployed on a he
 
 Production docker container images are automatically built by CI.
 To deploy the latest version on a virtual machine with docker-compose installed,
-download [docker-compose.yml](https://raw.githubusercontent.com/ssciwr/circuit_seq/main/docker-compose.yml), then do
+download [docker-compose.yml](https://raw.githubusercontent.com/ssciwr/sample_flow/main/docker-compose.yml), then do
 
 ```
 sudo docker-compose pull
@@ -19,10 +19,10 @@ either in env vars or in a file `.env` in the same location as the docker-compos
 For example the current deployment on heicloud looks like this:
 
 ```
-CIRCUIT_SEQ_DATA="/home/ubuntu/circuit_seq/docker_volume"
-CIRCUIT_SEQ_SSL_CERT="/etc/letsencrypt/live/circuitseq.iwr.uni-heidelberg.de/fullchain.pem"
-CIRCUIT_SEQ_SSL_KEY="/etc/letsencrypt/live/circuitseq.iwr.uni-heidelberg.de/privkey.pem"
-CIRCUIT_SEQ_JWT_SECRET_KEY="abc123" # to generate a new secret key: `python -c "import secrets; print(secrets.token_urlsafe(64))"`
+SAMPLE_FLOW_DATA="/home/ubuntu/sample_flow/docker_volume"
+SAMPLE_FLOW_SSL_CERT="/etc/letsencrypt/live/circuitseq.iwr.uni-heidelberg.de/fullchain.pem"
+SAMPLE_FLOW_SSL_KEY="/etc/letsencrypt/live/circuitseq.iwr.uni-heidelberg.de/privkey.pem"
+SAMPLE_FLOW_JWT_SECRET_KEY="abc123" # to generate a new secret key: `python -c "import secrets; print(secrets.token_urlsafe(64))"`
 ```
 
 The current status of the containers can be checked with
@@ -48,8 +48,8 @@ sudo docker-compose up -d
 To make an existing user with email `user@embl.de` into an admin, ssh into the VM, then
 
 ```
-cd circuit_seq
-sudo sqlite3 docker_volume/CircuitSeq.db
+cd sample_flow
+sudo sqlite3 docker_volume/SampleFlow.db
 sqlite> UPDATE user SET is_admin=true WHERE email='user@embl.de';
 sqlite> .quit
 ```

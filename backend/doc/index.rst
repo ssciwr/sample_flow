@@ -1,4 +1,4 @@
-CircuitSeq Server
+SampleFlow Server
 ==============================
 
 .. toctree::

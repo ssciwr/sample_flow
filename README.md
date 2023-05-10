@@ -1,10 +1,10 @@
-# CircuitSEQ website
+# SampleFlow website
 
-[![CI](https://github.com/ssciwr/circuit_seq/actions/workflows/ci.yml/badge.svg)](https://github.com/ssciwr/circuit_seq/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/ssciwr/circuit_seq/branch/main/graph/badge.svg?token=Z8fyKbjrHd)](https://codecov.io/gh/ssciwr/circuit_seq)
-[![sonar](https://sonarcloud.io/api/project_badges/measure?project=ssciwr_circuit_seq&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=ssciwr_circuit_seq)
+[![CI](https://github.com/ssciwr/sample_flow/actions/workflows/ci.yml/badge.svg)](https://github.com/ssciwr/sample_flow/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/ssciwr/sample_flow/branch/main/graph/badge.svg?token=Z8fyKbjrHd)](https://codecov.io/gh/ssciwr/sample_flow)
+[![sonar](https://sonarcloud.io/api/project_badges/measure?project=ssciwr_sample_flow&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=ssciwr_sample_flow)
 
-The source code for the [CircuitSEQ website](https://circuitseq.iwr.uni-heidelberg.de/).
+The source code for the [SampleFlow website](https://circuitseq.iwr.uni-heidelberg.de/).
 
 ## Implemented features
 
@@ -40,7 +40,7 @@ Admins can also generate an API token,
 then do all of the above programatically using
 the provided REST API:
 
-- [api_examples.ipynb](https://github.com/ssciwr/circuit_seq/blob/main/notebooks/api_examples.ipynb)
+- [api_examples.ipynb](https://github.com/ssciwr/sample_flow/blob/main/notebooks/api_examples.ipynb)
 
 ## Developer info
 

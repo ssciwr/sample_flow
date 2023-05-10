@@ -1,6 +1,6 @@
 from __future__ import annotations
 import pytest
-from circuit_seq_server import create_app
+from sample_flow_server import create_app
 from typing import List
 import flask
 import io

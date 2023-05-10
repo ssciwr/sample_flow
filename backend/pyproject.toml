@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "circuit_seq_server"
+name = "sample_flow_server"
 description = "Add short description here"
 readme = "README.md"
 maintainers = [{ name = "Liam Keegan", email = "ssc@iwr.uni-heidelberg.de" }]
@@ -29,14 +29,14 @@ dependencies = [
 ]
 
 [project.scripts]
-circuit_seq_server = "circuit_seq_server.main:main"
+sample_flow_server = "sample_flow_server.main:main"
 
 [project.optional-dependencies]
 tests = ["pytest", "pytest-cov", "freezegun"]
 docs = ["m2r2", "sphinx", "sphinx_rtd_theme"]
 
 [tool.setuptools.dynamic]
-version = { attr = "circuit_seq_server.__version__" }
+version = { attr = "sample_flow_server.__version__" }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

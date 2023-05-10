@@ -1,4 +1,4 @@
-# CircuitSEQ website developer info
+# SampleFlow website developer info
 
 Some information on how to locally build and deploy the website if you would like to make changes to the code.
 
@@ -12,8 +12,8 @@ Pre-requisites:
 To run the website locally in docker containers on your computer:
 
 ```sh
-git clone https://github.com/ssciwr/circuit_seq.git
-cd circuit_seq
+git clone https://github.com/ssciwr/sample_flow.git
+cd sample_flow
 docker-compose up --build
 ```
 
@@ -21,13 +21,13 @@ docker-compose up --build
 
 The database will by default be stored in a `docker_volume` folder
 in the folder where you run the docker-compose command.
-To modify this location, set the `CIRCUIT_SEQ_DATA` environment variable.
+To modify this location, set the `SAMPLE_FLOW_DATA` environment variable.
 
 ### SSL
 
 SSL cert/key by default are assumed to exist as `cert.pem` and `key.pem`
 in the folder where you run the docker-compose command.
-To point to different files, set the `CIRCUIT_SEQ_SSL_CERT` and `CIRCUIT_SEQ_SSL_KEY` environment variables.
+To point to different files, set the `SAMPLE_FLOW_SSL_CERT` and `SAMPLE_FLOW_SSL_KEY` environment variables.
 
 For example to generate a cert/key pair on linux:
 
@@ -38,7 +38,7 @@ openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -sha256 -days 3
 ### Secret Key
 
 JWT tokens used for authentication are generated using a secret key.
-This can be set using the `CIRCUIT_SEQ_JWT_SECRET_KEY` environment variable.
+This can be set using the `SAMPLE_FLOW_JWT_SECRET_KEY` environment variable.
 If this is not set or is less than 16 chars, a new random secret key is generated when the server starts.
 
 ### URL
@@ -58,8 +58,8 @@ To make yourself an admin user, see the production deployment section below.
 Clone the repo:
 
 ```sh
-git clone https://github.com/ssciwr/circuit_seq.git
-cd circuit_seq
+git clone https://github.com/ssciwr/sample_flow.git
+cd sample_flow
 ```
 
 Install and run the backend:
@@ -68,7 +68,7 @@ Install and run the backend:
 cd backend
 pip install .
 cd ..
-circuit_seq_server
+sample_flow_server
 ```
 
 Install and run the frontend:

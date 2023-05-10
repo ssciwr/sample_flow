@@ -7,7 +7,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = "circuit_seq_server"
+project = "sample_flow_server"
 copyright = "2022, Liam Keegan"
 author = "Liam Keegan"
 

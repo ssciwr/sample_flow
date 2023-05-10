@@ -1,5 +1,5 @@
 import argon2
-from circuit_seq_server.model import User, Sample, db
+from sample_flow_server.model import User, Sample, db
 import datetime
 
 
@@ -7,7 +7,7 @@ def add_test_users(app):
     ph = argon2.PasswordHasher()
     with app.app_context():
         # add users for tests
-        for (name, is_admin) in [("admin", True), ("user", False)]:
+        for name, is_admin in [("admin", True), ("user", False)]:
             email = f"{name}@embl.de"
             db.session.add(
                 User(

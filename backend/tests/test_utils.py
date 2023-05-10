@@ -1,12 +1,12 @@
 from __future__ import annotations
-from circuit_seq_server.utils import get_primary_key
+from sample_flow_server.utils import get_primary_key
 import datetime
-from circuit_seq_server.utils import get_start_of_week
-from circuit_seq_server.utils import (
+from sample_flow_server.utils import get_start_of_week
+from sample_flow_server.utils import (
     encode_password_reset_token,
     decode_password_reset_token,
 )
-from circuit_seq_server.utils import encode_activation_token, decode_activation_token
+from sample_flow_server.utils import encode_activation_token, decode_activation_token
 
 
 def test_get_start_of_week():

@@ -1,9 +1,9 @@
-# CircuitSeq Backend
+# SampleFlow Backend
 
 The Flask REST API backend for [circuitseq.iwr.uni-heidelberg.de](https://circuitseq.iwr.uni-heidelberg.de/).
 
 Note: these are development install/use instructions, see
-[README_DEV.md](https://github.com/ssciwr/circuit_seq/blob/main/README_DEV.md)
+[README_DEV.md](https://github.com/ssciwr/sample_flow/blob/main/README_DEV.md)
 for instructions on running the full production docker-compose setup locally.
 
 ## Installation
@@ -17,13 +17,13 @@ pip install -e .[tests]
 To start a local development server for testing purposes:
 
 ```bash
-circuit_seq_server
+sample_flow_server
 ```
 
-Type `circuit_seq_server --help` to see the command line options:
+Type `sample_flow_server --help` to see the command line options:
 
 ```bash
-Usage: circuit_seq_server [OPTIONS]
+Usage: sample_flow_server [OPTIONS]
 
 Options:
   --host TEXT       [default: localhost]

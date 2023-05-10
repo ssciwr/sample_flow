@@ -5,5 +5,5 @@ User API
 
 This is an example function:
 
-.. automodule:: circuit_seq_server
+.. automodule:: sample_flow_server
     :members:
