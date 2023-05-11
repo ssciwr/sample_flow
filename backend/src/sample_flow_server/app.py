@@ -13,8 +13,8 @@ from flask_jwt_extended import current_user
 from flask_jwt_extended import jwt_required
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
-from circuit_seq_server.logger import get_logger
-from circuit_seq_server.model import (
+from sample_flow_server.logger import get_logger
+from sample_flow_server.model import (
     db,
     Sample,
     User,
@@ -32,9 +32,9 @@ from circuit_seq_server.model import (
 )
 
 
-def create_app(data_path: str = "/circuit_seq_data"):
-    logger = get_logger("CircuitSeqServer")
-    app = Flask("CircuitSeqServer")
+def create_app(data_path: str = "/sample_flow_data"):
+    logger = get_logger("SampleFlowServer")
+    app = Flask("SampleFlowServer")
     jwt_secret_key = os.environ.get("JWT_SECRET_KEY")
     if jwt_secret_key is not None and len(jwt_secret_key) > 16:
         logger.info("Setting JWT_SECRET_KEY from supplied env var")
@@ -47,7 +47,7 @@ def create_app(data_path: str = "/circuit_seq_data"):
         app.config["JWT_SECRET_KEY"] = secrets.token_urlsafe(64)
     # tokens are by default valid for 30mins
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = datetime.timedelta(minutes=30)
-    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{data_path}/CircuitSeq.db"
+    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{data_path}/SampleFlow.db"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     # limit max file upload size to 384mb
     app.config["MAX_CONTENT_LENGTH"] = 384 * 1024 * 1024

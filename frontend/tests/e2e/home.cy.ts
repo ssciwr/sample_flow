@@ -8,6 +8,6 @@ describe("Home page", () => {
       { remaining: 67 }
     );
     cy.visit("/");
-    cy.contains("li", "Remaining available samples this week: 67");
+    cy.contains("Remaining available samples this week: 67");
   });
 });

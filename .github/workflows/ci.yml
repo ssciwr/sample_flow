@@ -56,11 +56,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: pip install -e .[tests]
-      - run: python -m pytest --cov=circuit_seq_server --cov-report=xml -v
+      - run: python -m pytest --cov=sample_flow_server --cov-report=xml -v
       - run: |
           openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -sha256 -days 365 -nodes -subj '/CN=localhost'
-          circuit_seq_server --help
-          timeout 5 circuit_seq_server || [ "$?" -eq 124 ]
+          sample_flow_server --help
+          timeout 5 sample_flow_server || [ "$?" -eq 124 ]
       - uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -82,16 +82,16 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       - run: |
-          echo $CIRCUIT_SEQ_DOCKER_IMAGE_TAG
+          echo $SAMPLE_FLOW_DOCKER_IMAGE_TAG
           docker-compose build
           docker-compose push
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
-          CIRCUIT_SEQ_DOCKER_IMAGE_TAG: ${{ github.sha }}
+          SAMPLE_FLOW_DOCKER_IMAGE_TAG: ${{ github.sha }}
       - run: |
-          echo $CIRCUIT_SEQ_DOCKER_IMAGE_TAG
+          echo $SAMPLE_FLOW_DOCKER_IMAGE_TAG
           docker-compose build
           docker-compose push
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
-          CIRCUIT_SEQ_DOCKER_IMAGE_TAG: "latest"
+          SAMPLE_FLOW_DOCKER_IMAGE_TAG: "latest"

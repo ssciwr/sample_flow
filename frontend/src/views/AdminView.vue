@@ -185,7 +185,7 @@ function upload_result() {
       </p>
     </ListItem>
     <ListItem title="Settings" icon="bi-gear">
-      <table class="zebra" aria-label="Settings for the CircuitSeq website">
+      <table class="zebra" aria-label="Settings for the SampleFlow website">
         <tr>
           <th>Setting</th>
           <th>Value</th>

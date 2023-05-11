@@ -2,14 +2,14 @@ from __future__ import annotations
 from typing import Optional
 import datetime
 import pathlib
-from circuit_seq_server.logger import get_logger
+from sample_flow_server.logger import get_logger
 import string
 import math
 from Bio import SeqIO
 import snapgene_reader
 from itsdangerous.url_safe import URLSafeTimedSerializer
 
-logger = get_logger("CircuitSeqServer")
+logger = get_logger("SampleFlowServer")
 
 
 def _encode_string_as_token(string_to_encode: str, salt: str, secret_key: str) -> str:

@@ -13,12 +13,12 @@ import datetime
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.datastructures import FileStorage
 from dataclasses import dataclass
-from circuit_seq_server.logger import get_logger
-from circuit_seq_server.utils import get_primary_key
-from circuit_seq_server.utils import get_start_of_week
-from circuit_seq_server.utils import parse_seq_to_fasta
+from sample_flow_server.logger import get_logger
+from sample_flow_server.utils import get_primary_key
+from sample_flow_server.utils import get_start_of_week
+from sample_flow_server.utils import parse_seq_to_fasta
 import csv
-from circuit_seq_server.utils import (
+from sample_flow_server.utils import (
     encode_activation_token,
     decode_activation_token,
     encode_password_reset_token,
@@ -27,7 +27,7 @@ from circuit_seq_server.utils import (
 
 db = SQLAlchemy()
 ph = argon2.PasswordHasher()
-logger = get_logger("CircuitSeqServer")
+logger = get_logger("SampleFlowServer")
 
 
 @dataclass
@@ -211,7 +211,7 @@ def _new_email_message(email: str) -> EmailMessage:
 
 
 def _wrap_email_message(email: str, message: str) -> str:
-    return f"Dear {email},\n\n{message}\n\nBest wishes,\n\nCircuitSEQ Team.\nhttps://circuitseq.iwr.uni-heidelberg.de"
+    return f"Dear {email},\n\n{message}\n\nBest wishes,\n\nSampleFlow Team.\nhttps://circuitseq.iwr.uni-heidelberg.de"
 
 
 def _send_email_message(email_message: EmailMessage) -> None:
@@ -243,7 +243,7 @@ def _send_result_email(sample: Sample, success: bool) -> Tuple[str, int]:
         )
         msg[
             "Subject"
-        ] = f"CircuitSEQ results for sample {sample.primary_key}_{sample.name}"
+        ] = f"SampleFlow results for sample {sample.primary_key}_{sample.name}"
         if success is True:
             for filetype in ["fasta", "gbk"]:
                 result_file = sample.results_file_path(filetype)
@@ -391,13 +391,13 @@ def _send_activation_email(email: str):
     logger.info(f"Activation url: {url}")
     msg = _new_email_message(email)
     msg_body = (
-        f"To activate your CircuitSEQ account,"
+        f"To activate your SampleFlow account,"
         f"please confirm your email address by clicking on the following link:\n\n"
         f"{url}\n\n"
         f"If you did not sign up for an account please disregard this email."
     )
     msg.set_content(_wrap_email_message(email, msg_body))
-    msg["Subject"] = "CircuitSEQ account activation"
+    msg["Subject"] = "SampleFlow account activation"
     _send_email_message(msg)
 
 
@@ -410,7 +410,7 @@ def send_password_reset_email(email: str) -> Tuple[str, int]:
         logger.info(f"  -> Unknown email address '{email}'")
         msg_body = (
             f"A password reset request was made for this email address, "
-            f"but no CircuitSEQ account was found for this address.\n\n"
+            f"but no SampleFlow account was found for this address.\n\n"
             f"Maybe you signed up with a different email address?\n\n"
             f"If you did not make this password reset request please disregard this email."
         )
@@ -420,13 +420,13 @@ def send_password_reset_email(email: str) -> Tuple[str, int]:
         url = f"https://circuitseq.iwr.uni-heidelberg.de/reset_password/{token}"
         logger.info(f"Password reset url: {url}")
         msg_body = (
-            f"To reset the password for your CircuitSEQ account, "
+            f"To reset the password for your SampleFlow account, "
             f"please click on the following link (valid for 1 hour):\n\n"
             f"{url}\n\n"
             f"If you did not make this password reset request please disregard this email."
         )
     msg.set_content(_wrap_email_message(email, msg_body))
-    msg["Subject"] = "CircuitSEQ password reset"
+    msg["Subject"] = "SampleFlow password reset"
     _send_email_message(msg)
     return f"Sent password reset email to '{email}'", 200
 

@@ -1,20 +1,20 @@
 services:
   backend:
-    image: ghcr.io/ssciwr/circuit_seq_backend:${CIRCUIT_SEQ_DOCKER_IMAGE_TAG:-latest}
+    image: ghcr.io/ssciwr/sample_flow_backend:${SAMPLE_FLOW_DOCKER_IMAGE_TAG:-latest}
     build: ./backend
     volumes:
-      - ${CIRCUIT_SEQ_DATA:-./docker_volume}:/circuit_seq_data
+      - ${SAMPLE_FLOW_DATA:-./docker_volume}:/sample_flow_data
     environment:
-      - JWT_SECRET_KEY=${CIRCUIT_SEQ_JWT_SECRET_KEY:-}
+      - JWT_SECRET_KEY=${SAMPLE_FLOW_JWT_SECRET_KEY:-}
   frontend:
-    image: ghcr.io/ssciwr/circuit_seq_frontend:${CIRCUIT_SEQ_DOCKER_IMAGE_TAG:-latest}
+    image: ghcr.io/ssciwr/sample_flow_frontend:${SAMPLE_FLOW_DOCKER_IMAGE_TAG:-latest}
     build: ./frontend
     ports:
       - 80:80
       - 443:443
     volumes:
-      - ${CIRCUIT_SEQ_SSL_CERT:-./cert.pem}:/circuit_seq_ssl_cert.pem
-      - ${CIRCUIT_SEQ_SSL_KEY:-./key.pem}:/circuit_seq_ssl_key.pem
+      - ${SAMPLE_FLOW_SSL_CERT:-./cert.pem}:/sample_flow_ssl_cert.pem
+      - ${SAMPLE_FLOW_SSL_KEY:-./key.pem}:/sample_flow_ssl_key.pem
   email:
     image: "boky/postfix"
     environment:
