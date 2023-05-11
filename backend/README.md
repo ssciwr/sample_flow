@@ -1,6 +1,6 @@
 # SampleFlow Backend
 
-The Flask REST API backend for [circuitseq.iwr.uni-heidelberg.de](https://circuitseq.iwr.uni-heidelberg.de/).
+The Flask REST API backend for SampleFlow.
 
 Note: these are development install/use instructions, see
 [README_DEV.md](https://github.com/ssciwr/sample_flow/blob/main/README_DEV.md)

@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/ssciwr/sample_flow/actions/workflows/ci.yml/badge.svg)](https://github.com/ssciwr/sample_flow/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/ssciwr/sample_flow/branch/main/graph/badge.svg?token=Z8fyKbjrHd)](https://codecov.io/gh/ssciwr/sample_flow)
-[![sonar](https://sonarcloud.io/api/project_badges/measure?project=ssciwr_sample_flow&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=ssciwr_sample_flow)
+[![sonar](https://sonarcloud.io/api/project_badges/measure?project=ssciwr_circuit_seq&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=ssciwr_circuit_seq)
 
 The source code for the [SampleFlow website](https://circuitseq.iwr.uni-heidelberg.de/).
 
