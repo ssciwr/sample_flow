@@ -9,6 +9,18 @@ Pre-requisites:
 - docker and docker-compose
 - you have created an SSL cert/key pair as described below
 
+### SSL
+
+SSL cert/key by default are assumed to exist as `cert.pem` and `key.pem`
+in the folder where you run the docker-compose command.
+To point to different files, set the `SAMPLE_FLOW_SSL_CERT` and `SAMPLE_FLOW_SSL_KEY` environment variables.
+
+For example to generate a cert/key pair on linux:
+
+```
+openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -sha256 -days 365 -nodes -subj '/CN=localhost'
+```
+
 To run the website locally in docker containers on your computer:
 
 ```sh
@@ -22,18 +34,6 @@ docker-compose up --build
 The database will by default be stored in a `docker_volume` folder
 in the folder where you run the docker-compose command.
 To modify this location, set the `SAMPLE_FLOW_DATA` environment variable.
-
-### SSL
-
-SSL cert/key by default are assumed to exist as `cert.pem` and `key.pem`
-in the folder where you run the docker-compose command.
-To point to different files, set the `SAMPLE_FLOW_SSL_CERT` and `SAMPLE_FLOW_SSL_KEY` environment variables.
-
-For example to generate a cert/key pair on linux:
-
-```
-openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -sha256 -days 365 -nodes -subj '/CN=localhost'
-```
 
 ### Secret Key
 
