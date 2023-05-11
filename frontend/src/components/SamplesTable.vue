@@ -4,6 +4,7 @@ import {
   download_result,
 } from "@/utils/api-client";
 import type { Sample } from "@/utils/types";
+import BarCode from "@/components/BarCode.vue";
 
 defineProps<{
   samples: Sample[];
@@ -23,7 +24,12 @@ defineProps<{
       <th>Results</th>
     </tr>
     <tr v-for="sample in samples" :key="sample.id">
-      <td>{{ sample["primary_key"] }}</td>
+      <td>
+        <template v-if="show_email">{{ sample["primary_key"] }}</template>
+        <template v-else>
+          <BarCode :value="sample['primary_key']"></BarCode>
+        </template>
+      </td>
       <td v-if="show_email">{{ sample["email"] }}</td>
       <td>{{ sample["name"] }}</td>
       <td>{{ sample["running_option"] }}</td>
