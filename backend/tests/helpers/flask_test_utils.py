@@ -38,6 +38,7 @@ def add_test_samples(app):
                 email="user@embl.de",
                 name=name,
                 primary_key=key,
+                tube_primary_key=key,
                 reference_sequence_description=None,
                 running_option="running_option",
                 concentration=100 + 13 * n,

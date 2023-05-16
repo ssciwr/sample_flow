@@ -89,6 +89,7 @@ class Sample(db.Model):
     id: int = db.Column(db.Integer, primary_key=True)
     email: str = db.Column(db.String(256), nullable=False)
     primary_key: str = db.Column(db.String(32), nullable=False, unique=True)
+    tube_primary_key: str = db.Column(db.String(32), nullable=False)
     name: str = db.Column(db.String(128), nullable=False)
     running_option: str = db.Column(db.String(128), nullable=False)
     concentration: int = db.Column(db.Integer, nullable=False)
@@ -156,6 +157,7 @@ def _write_samples_as_tsv_this_week(current_date: datetime.date) -> None:
         columns = [
             "date",
             "primary_key",
+            "tube_primary_key",
             "email",
             "name",
             "running_option",
@@ -287,6 +289,11 @@ def process_result(
     if sample is None:
         logger.warning(f" --> Unknown primary key {primary_key}")
         return f"Unknown primary key {primary_key}", 401
+    if sample.tube_primary_key != sample.primary_key:
+        logger.info(
+            f"Tube key '{sample.tube_primary_key}' differs from primary key '{primary_key}' -> using tube key"
+        )
+        return process_result(sample.tube_primary_key, success, result_zip_file)
     if success is False:
         logger.info("Sending result failure message for {primary_key}")
         return _send_result_email(sample, success)
@@ -520,15 +527,7 @@ def reset_user_password(token: str, email: str, new_password: str) -> Tuple[str,
     return f"Password changed", 200
 
 
-def add_new_sample(
-    email: str,
-    name: str,
-    running_option: str,
-    concentration: int,
-    reference_sequence_file: Optional[FileStorage],
-) -> Tuple[Optional[Sample], str]:
-    today = datetime.date.today()
-    base_path = _get_basepath(today)
+def _get_new_key(today: datetime) -> Tuple[Optional[str], str]:
     year, week, day = today.isocalendar()
     count = _count_samples_this_week(today)
     settings = get_current_settings()
@@ -542,8 +541,21 @@ def add_new_sample(
         n_rows=settings["plate_n_rows"],
         n_cols=settings["plate_n_cols"],
     )
+    return key, ""
+
+
+def add_new_sample(
+    email: str,
+    name: str,
+    running_option: str,
+    concentration: int,
+    reference_sequence_file: Optional[FileStorage],
+) -> Tuple[Optional[Sample], str]:
+    today = datetime.date.today()
+    base_path = _get_basepath(today)
+    key, message = _get_new_key(today)
     if key is None:
-        return None, "No more samples left this week."
+        return None, message
     reference_sequence_description: Optional[str] = None
     ref_seq_dir = pathlib.Path(f"{base_path}/inputs/references")
     ref_seq_dir.mkdir(parents=True, exist_ok=True)
@@ -563,6 +575,7 @@ def add_new_sample(
     new_sample = Sample(
         email=email,
         primary_key=key,
+        tube_primary_key=key,
         name=name,
         running_option=running_option,
         concentration=concentration,
@@ -575,3 +588,35 @@ def add_new_sample(
     db.session.add(new_sample)
     db.session.commit()
     return new_sample, ""
+
+
+def resubmit_sample(primary_key: str) -> Tuple[str, int]:
+    sample = db.session.execute(
+        db.select(Sample).filter_by(primary_key=primary_key)
+    ).scalar_one_or_none()
+    if sample is None:
+        logger.warning(f" --> Unknown primary_key '{primary_key}'")
+        return f"Unknown Primary Key '{primary_key}'", 401
+    today = datetime.date.today()
+    new_primary_key, message = _get_new_key(today)
+    if new_primary_key is None:
+        return message, 401
+    new_sample = Sample(
+        email="RESUBMITTED",
+        primary_key=new_primary_key,
+        tube_primary_key=sample.tube_primary_key,
+        name=sample.name,
+        running_option=sample.running_option,
+        concentration=sample.concentration,
+        reference_sequence_description=sample.reference_sequence_description,
+        date=today,
+        has_results_zip=False,
+        has_results_fasta=False,
+        has_results_gbk=False,
+    )
+    db.session.add(new_sample)
+    db.session.commit()
+    return (
+        f"Resubmitted sample '{primary_key}' with new primary key '{new_primary_key}'",
+        200,
+    )

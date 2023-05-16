@@ -29,6 +29,7 @@ from sample_flow_server.model import (
     update_samples_zipfile,
     process_result,
     send_password_reset_email,
+    resubmit_sample,
 )
 
 
@@ -262,6 +263,15 @@ def create_app(data_path: str = "/sample_flow_data"):
         if not current_user.is_admin:
             return jsonify(message="Admin account required"), 401
         return jsonify(get_samples())
+
+    @app.route("/api/admin/resubmit_sample", methods=["POST"])
+    @jwt_required()
+    def admin_resubmit_sample():
+        if not current_user.is_admin:
+            return jsonify(message="Admin account required"), 401
+        primary_key = request.json.get("primary_key", "")
+        message, code = resubmit_sample(primary_key)
+        return jsonify(message=message), code
 
     @app.route("/api/admin/zipsamples", methods=["POST"])
     @jwt_required()
