@@ -1,6 +1,7 @@
 export type Sample = {
   id: number;
   primary_key: string;
+  tube_primary_key: string;
   name: string;
   email: string;
   running_option: string;

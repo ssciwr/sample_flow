@@ -135,7 +135,8 @@ function add_sample() {
         <p>Your samples for this week:</p>
         <SamplesTable
           :samples="current_samples"
-          :show_email="false"
+          :admin="false"
+          :resubmit_button="false"
         ></SamplesTable>
       </template>
       <template v-else>
@@ -238,7 +239,8 @@ function add_sample() {
         <p>Results from your previous samples:</p>
         <SamplesTable
           :samples="previous_samples"
-          :show_email="false"
+          :admin="false"
+          :resubmit_button="false"
         ></SamplesTable>
       </template>
       <template v-else>

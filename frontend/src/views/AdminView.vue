@@ -21,10 +21,14 @@ function generate_api_token() {
 const current_samples = ref([] as Sample[]);
 const previous_samples = ref([] as Sample[]);
 
-apiClient.get("admin/samples").then((response) => {
-  current_samples.value = response.data.current_samples;
-  previous_samples.value = response.data.previous_samples;
-});
+function get_samples() {
+  apiClient.get("admin/samples").then((response) => {
+    current_samples.value = response.data.current_samples;
+    previous_samples.value = response.data.previous_samples;
+  });
+}
+
+get_samples();
 
 const users = ref([] as User[]);
 apiClient.get("admin/users").then((response) => {
@@ -125,7 +129,8 @@ function upload_result() {
       <p>{{ current_samples.length }} samples have been requested so far:</p>
       <SamplesTable
         :samples="current_samples"
-        :show_email="true"
+        :admin="true"
+        :resubmit_button="false"
       ></SamplesTable>
       <p>
         <a href="" @click.prevent="download_zipsamples()">
@@ -255,7 +260,9 @@ function upload_result() {
     <ListItem title="Previous samples" icon="bi-gear">
       <SamplesTable
         :samples="previous_samples"
-        :show_email="true"
+        :admin="true"
+        :resubmit_button="true"
+        @sample_resubmitted="get_samples"
       ></SamplesTable>
     </ListItem>
     <ListItem title="Users" icon="bi-gear">

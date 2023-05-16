@@ -347,9 +347,10 @@ def test_result_invalid(client):
         assert f"No {filetype} results available" in response.json["message"]
 
 
-def _upload_result(client, result_zipfile: pathlib.Path):
+def _upload_result(client, result_zipfile: pathlib.Path, primary_key: str = None):
     headers = _get_auth_headers(client, "admin@embl.de", "admin")
-    primary_key = result_zipfile.stem[0:8]
+    if primary_key is None:
+        primary_key = result_zipfile.stem[0:8]
     with open(result_zipfile, "rb") as f:
         response = client.post(
             "/api/admin/result",
@@ -508,9 +509,12 @@ def test_admin_zipsamples_valid(client, ref_seq_fasta):
     tsv_lines = zip_file.read("samples.tsv").splitlines()
     assert len(tsv_lines) == 2
     assert (
-        tsv_lines[0] == b"date\tprimary_key\temail\tname\trunning_option\tconcentration"
+        tsv_lines[0]
+        == b"date\tprimary_key\ttube_primary_key\temail\tname\trunning_option\tconcentration"
     )
-    assert tsv_lines[1] == b"2022-11-21\t22_47_A1\tadmin@embl.de\tabc\tr Q\t97"
+    assert (
+        tsv_lines[1] == b"2022-11-21\t22_47_A1\t22_47_A1\tadmin@embl.de\tabc\tr Q\t97"
+    )
 
 
 def test_admin_result_valid(client, result_zipfiles):
@@ -518,3 +522,36 @@ def test_admin_result_valid(client, result_zipfiles):
         response = _upload_result(client, result_zipfile)
         assert response.status_code == 200
         assert result_zipfile.name in response.json["message"]
+
+
+@freeze_time("2022-11-21")
+def test_admin_resubmit_sample_valid(client, result_zipfiles):
+    headers = _get_auth_headers(client, "admin@embl.de", "admin")
+    primary_key = "22_46_A2"
+    new_primary_key = "22_47_A1"
+    response = client.post(
+        "/api/admin/resubmit_sample",
+        json={"primary_key": primary_key},
+        headers=headers,
+    )
+    assert response.status_code == 200
+    assert primary_key in response.json["message"]
+    assert new_primary_key in response.json["message"]
+    response = client.get("/api/admin/samples", headers=headers)
+    assert len(response.json["current_samples"]) == 1
+    resubmitted_sample = response.json["current_samples"][0]
+    print(response.json["previous_samples"])
+    original_sample = [
+        d for d in response.json["previous_samples"] if d["primary_key"] == primary_key
+    ][0]
+    assert resubmitted_sample["id"] > original_sample["id"]
+    assert resubmitted_sample["primary_key"] == "22_47_A1"
+    assert resubmitted_sample["email"] == "RESUBMITTED"
+    keys_that_should_differ = ["id", "primary_key", "date", "email"]
+    for key, value in original_sample.items():
+        if key not in keys_that_should_differ:
+            assert value == resubmitted_sample[key]
+    # uploading a result for new primary key -> original primary key
+    response = _upload_result(client, result_zipfiles[0], "22_47_A1")
+    assert response.status_code == 200
+    assert primary_key in response.json["message"]
