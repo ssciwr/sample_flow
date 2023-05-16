@@ -1,4 +1,5 @@
 import axios from "axios";
+import router from "@/router";
 import type { AxiosInstance } from "axios";
 import { useUserStore } from "@/stores/user";
 
@@ -34,6 +35,11 @@ function download_file_from_endpoint(
       link.setAttribute("download", filename);
       document.body.appendChild(link);
       link.click();
+    })
+    .catch((error) => {
+      if (error.response.status > 400) {
+        logout();
+      }
     });
 }
 
@@ -57,8 +63,16 @@ function download_zipsamples() {
   download_file_from_endpoint("admin/zipsamples", {}, "samples.zip");
 }
 
+function logout() {
+  const user = useUserStore();
+  user.user = null;
+  user.token = "";
+  router.push({ name: "login" });
+}
+
 export {
   apiClient,
+  logout,
   download_zipsamples,
   download_reference_sequence,
   download_result,

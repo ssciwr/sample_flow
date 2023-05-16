@@ -76,7 +76,7 @@ def set_current_settings(email: str, settings_dict: Dict) -> Tuple[str, int]:
         if required_field not in settings_dict:
             return (
                 f"Required field {required_field} missing - settings not updated",
-                401,
+                400,
             )
     settings = Settings(
         datetime=datetime.datetime.today(), email=email, settings_dict=settings_dict
@@ -263,7 +263,7 @@ def _send_result_email(
         logger.warning(f"  --> failed to send result email: {e}")
         return (
             f"Failed to send results email for {sample.primary_key} to {sample.email}: {e}",
-            401,
+            400,
         )
     return (
         f"Results email for {sample.primary_key} sent to {sample.email}",
@@ -289,7 +289,7 @@ def process_result(
     ).scalar_one_or_none()
     if sample is None:
         logger.warning(f" --> Unknown primary key {primary_key}")
-        return f"Unknown primary key {primary_key}", 401
+        return f"Unknown primary key {primary_key}", 400
     if sample.tube_primary_key != sample.primary_key:
         logger.info(
             f"Tube key '{sample.tube_primary_key}' differs from primary key '{primary_key}' -> using tube key"
@@ -302,7 +302,7 @@ def process_result(
         return _send_result_email(sample, success)
     if result_zip_file is None:
         logger.warning(f" --> No zipfile")
-        return f"Zip file missing", 401
+        return f"Zip file missing", 400
     logger.info(
         f"Processing zip file {result_zip_file} for {primary_key} --> {sample.results_file_path()}"
     )
@@ -427,11 +427,11 @@ def send_password_reset_email(email: str) -> Tuple[str, int]:
 
 def add_new_user(email: str, password: str, is_admin: bool) -> Tuple[str, int]:
     if not is_valid_email(email):
-        return "Please use a uni-heidelberg, dkfz or embl email address.", 401
+        return "Please use a uni-heidelberg, dkfz or embl email address.", 400
     if not is_valid_password(password):
         return (
             "Password must contain at least 8 characters, including lower-case, upper-case and a number",
-            401,
+            400,
         )
     if (
         db.session.execute(
@@ -441,13 +441,13 @@ def add_new_user(email: str, password: str, is_admin: bool) -> Tuple[str, int]:
     ):
         return (
             "This email address is already in use",
-            401,
+            400,
         )
     try:
         _send_activation_email(email)
     except Exception as e:
         logger.warning(f"Send activation email failed: {e}")
-        return "Failed to send activation email", 401
+        return "Failed to send activation email", 400
     try:
         db.session.add(
             User(
@@ -460,7 +460,7 @@ def add_new_user(email: str, password: str, is_admin: bool) -> Tuple[str, int]:
         db.session.commit()
     except Exception as e:
         logger.warning(f"Error adding user to db: {e}")
-        return "Failed to create new user", 401
+        return "Failed to create new user", 400
     return (
         f"Successful signup for {email}. To activate your account, please click on the link in the activation email from no-reply@circuitseq.iwr.uni-heidelberg.de sent to this email address",
         200,
@@ -473,17 +473,17 @@ def activate_user(token: str) -> Tuple[str, int]:
     email = decode_activation_token(token, secret_key)
     if email is None:
         logger.info("  -> Invalid token")
-        return "Invalid or expired activation link", 401
+        return "Invalid or expired activation link", 400
     logger.info(f"  -> email '{email}'")
     user = db.session.execute(
         db.select(User).filter(User.email == email)
     ).scalar_one_or_none()
     if user is None:
         logger.info(f"  -> Unknown email address '{email}'")
-        return f"Unknown email address {email}", 401
+        return f"Unknown email address {email}", 400
     if user.activated is True:
         logger.info(f"  -> User with email {email} already activated")
-        return f"Account for {email} is already activated", 401
+        return f"Account for {email} is already activated", 400
     user.activated = True
     db.session.commit()
     return f"Account {email} activated", 200
@@ -495,19 +495,19 @@ def reset_user_password(token: str, email: str, new_password: str) -> Tuple[str,
     decoded_email = decode_password_reset_token(token, secret_key)
     if decoded_email is None:
         logger.info("  -> Invalid token")
-        return "Invalid or expired password reset link", 401
+        return "Invalid or expired password reset link", 400
     logger.info(f"  -> decoded_email '{email}'")
     if email.lower() != decoded_email.lower():
         logger.info(
             f"  -> Supplied email '{email}' doesn't match decoded one '{decoded_email}'"
         )
-        return "Invalid email address", 401
+        return "Invalid email address", 400
     user = db.session.execute(
         db.select(User).filter(User.email == email)
     ).scalar_one_or_none()
     if user is None:
         logger.info(f"  -> Unknown email address '{email}'")
-        return f"Unknown email address {email}", 401
+        return f"Unknown email address {email}", 400
     user.set_password_nocheck(new_password)
     db.session.commit()
     logger.info(f"  -> Password changed for {email}")
@@ -590,11 +590,11 @@ def resubmit_sample(primary_key: str) -> Tuple[str, int]:
     ).scalar_one_or_none()
     if sample is None:
         logger.warning(f" --> Unknown primary_key '{primary_key}'")
-        return f"Unknown Primary Key '{primary_key}'", 401
+        return f"Unknown Primary Key '{primary_key}'", 400
     today = datetime.date.today()
     new_primary_key, message = _get_new_key(today)
     if new_primary_key is None:
-        return message, 401
+        return message, 400
     new_sample = Sample(
         email="RESUBMITTED",
         primary_key=new_primary_key,

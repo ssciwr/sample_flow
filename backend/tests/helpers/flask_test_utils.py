@@ -2,6 +2,8 @@ import argon2
 from sample_flow_server.model import User, Sample, db
 import datetime
 import pathlib
+import shutil
+import tempfile
 
 
 def add_test_users(app):
@@ -37,8 +39,10 @@ def add_test_samples(app, data_path: pathlib.Path):
             key = f"22_{week}_A{n}"
             ref_dir = data_path / "2022" / f"{week}" / "inputs" / "references"
             ref_dir.mkdir(parents=True, exist_ok=True)
-            with open(ref_dir / f"{key}_{name}.zip", "w") as f:
-                f.write("abc123")
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                with open(f"{tmp_dir}/test.txt", "w") as f:
+                    f.write(key)
+                shutil.make_archive(f"{ref_dir}/{key}_{name}", "zip", tmp_dir)
             new_sample = Sample(
                 email="user@embl.de",
                 name=name,

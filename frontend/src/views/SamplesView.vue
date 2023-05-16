@@ -2,7 +2,7 @@
 import { computed, ref } from "vue";
 import ListItem from "@/components/ListItem.vue";
 import SamplesTable from "@/components/SamplesTable.vue";
-import { apiClient } from "@/utils/api-client";
+import { apiClient, logout } from "@/utils/api-client";
 import { validate_sample_name } from "@/utils/validation";
 import type { Sample, RunningOptions } from "@/utils/types";
 
@@ -89,6 +89,9 @@ apiClient
     previous_samples.value = response.data.previous_samples;
   })
   .catch((error) => {
+    if (error.response.status > 400) {
+      logout();
+    }
     console.log(error);
   });
 
@@ -104,6 +107,9 @@ apiClient
     }
   })
   .catch((error) => {
+    if (error.response.status > 400) {
+      logout();
+    }
     console.log(error);
   });
 
@@ -128,6 +134,9 @@ function add_sample() {
       new_sample_error_message.value = "";
     })
     .catch((error) => {
+      if (error.response.status > 400) {
+        logout();
+      }
       new_sample_error_message.value = error.response.data.message;
     });
   update_remaining();
