@@ -1,6 +1,7 @@
 from __future__ import annotations
 import sample_flow_server.model as model
 import datetime
+import shutil
 import pathlib
 from freezegun import freeze_time
 from werkzeug.datastructures import FileStorage
@@ -67,7 +68,7 @@ def test_add_new_sample_mon(app, tmp_path):
         assert model.remaining_samples_this_week(current_date)["remaining"] == 96
         # add a sample without a reference sequence
         new_sample, error_message = model.add_new_sample(
-            "u1@embl.de", "s1", "running option", 234, None
+            "u1@embl.de", "s1", "running option", 234, []
         )
         assert error_message == ""
         assert new_sample is not None
@@ -78,10 +79,8 @@ def test_add_new_sample_mon(app, tmp_path):
         year, week, day = current_date.isocalendar()
         assert new_sample.primary_key == f"{year%100}_{week}_A1"
         assert new_sample.date == current_date
-        assert new_sample.reference_sequence_description is None
+        assert new_sample.has_reference_seq_zip is False
         assert new_sample.has_results_zip is False
-        assert new_sample.has_results_fasta is False
-        assert new_sample.has_results_gbk is False
         samples = model.db.session.execute(this_week_samples).scalars().all()
         assert len(samples) == 1
         assert samples[0] == new_sample
@@ -101,7 +100,7 @@ def test_add_new_sample_sat(app, tmp_path):
         )
         # try to add a sample on a saturday
         new_sample, error_message = model.add_new_sample(
-            "u1@embl.de", "s1", "running option", 123, None
+            "u1@embl.de", "s1", "running option", 123, []
         )
         assert new_sample is None
         assert "closed" in error_message
@@ -119,7 +118,7 @@ def test_add_new_sample_sat(app, tmp_path):
         assert model.remaining_samples_this_week(current_date)["message"] == ""
         # try to add a sample on a saturday
         new_sample, error_message = model.add_new_sample(
-            "u1@embl.de", "s1", "running option", 123, None
+            "u1@embl.de", "s1", "running option", 123, []
         )
         assert new_sample is not None
         assert error_message == ""
@@ -139,7 +138,7 @@ def test_add_new_sample_full(app, tmp_path):
         assert model._count_samples_this_week(current_date) == 0
         assert model.remaining_samples_this_week(current_date)["remaining"] == 1
         new_sample, error_message = model.add_new_sample(
-            "u1@embl.de", "s1", "running option", 11, None
+            "u1@embl.de", "s1", "running option", 11, []
         )
         assert new_sample is not None
         assert error_message == ""
@@ -150,7 +149,7 @@ def test_add_new_sample_full(app, tmp_path):
             == "All samples have been taken this week."
         )
         new_sample, error_message = model.add_new_sample(
-            "u1@embl.de", "s2", "running option", 66, None
+            "u1@embl.de", "s2", "running option", 66, []
         )
         assert new_sample is None
         assert "samples have been taken this week" in error_message
@@ -224,74 +223,57 @@ def test_add_new_user_valid(app):
         assert user.activated is True
 
 
-def test_process_result_success(app, result_zipfiles, tmp_path):
+def test_process_result_success(app, result_zipfile, tmp_path):
+    primary_key = "22_46_A1"
+    label = "ref_seq"
     with app.app_context():
         last_email_msg = app.config.get("TESTING_ONLY_LAST_SMTP_MESSAGE")
         assert last_email_msg is None
-        for result_zipfile in result_zipfiles:
-            with open(result_zipfile, "rb") as f:
-                primary_key = str(result_zipfile.stem)[0:8]
-                message, code = model.process_result(primary_key, True, FileStorage(f))
-            assert code == 200
-            zip_file_path = pathlib.Path(result_zipfile.name)
-            assert result_zipfile.name in message
-            results_dir = tmp_path / "2022/46/results"
-            assert results_dir.is_dir()
-            zip_path_on_server = results_dir / zip_file_path
-            assert zip_path_on_server.is_file()
-            assert zip_path_on_server.with_suffix(".fasta").is_file()
-            assert zip_path_on_server.with_suffix(".gbk").is_file()
-            last_email_msg = app.config.get("TESTING_ONLY_LAST_SMTP_MESSAGE")
-            assert last_email_msg is not None
-            body = str(last_email_msg.get_body()).replace("=\n", "")
-            assert zip_file_path.stem in body
-            assert "the results are attached" in body
-            email_attachments = [
-                attachment.get_filename()
-                for attachment in last_email_msg.iter_attachments()
-            ]
-            assert str(zip_file_path.with_suffix(".fasta")) in email_attachments
-            assert str(zip_file_path.with_suffix(".gbk")) in email_attachments
+        with open(result_zipfile, "rb") as f:
+            message, code = model.process_result(primary_key, True, FileStorage(f))
+        assert code == 200
+        assert "file saved" in message
+        results_dir = tmp_path / "2022/46/results"
+        assert results_dir.is_dir()
+        zip_path_on_server = results_dir / f"{primary_key}_{label}.zip"
+        assert zip_path_on_server.is_file()
+        last_email_msg = app.config.get("TESTING_ONLY_LAST_SMTP_MESSAGE")
+        assert last_email_msg is not None
+        body = str(last_email_msg.get_body()).replace("=\n", "")
+        assert "download" in body
+        email_attachments = [
+            attachment.get_filename()
+            for attachment in last_email_msg.iter_attachments()
+        ]
+        assert "c.txt" in email_attachments
+        assert "a.txt" in email_attachments
+        assert len(email_attachments) == 2
 
 
-def test_process_result_unsuccessful(app, result_zipfiles):
+def test_process_result_unsuccessful(app):
     with app.app_context():
         last_email_msg = app.config.get("TESTING_ONLY_LAST_SMTP_MESSAGE")
         assert last_email_msg is None
-        for result_zipfile in result_zipfiles:
-            primary_key = str(result_zipfile.stem)[0:8]
-            message, code = model.process_result(primary_key, False, None)
-            assert code == 200
-            zip_file_path = pathlib.Path(result_zipfile.name)
-            assert primary_key in message
-            assert result_zipfile.name not in message
-            last_email_msg = app.config.get("TESTING_ONLY_LAST_SMTP_MESSAGE")
-            assert last_email_msg is not None
-            body = str(last_email_msg.get_body()).replace("=\n", "")
-            assert zip_file_path.stem in body
-            assert "no correct de-novo assembly has been determined" in body
-            assert zip_file_path.stem in str(last_email_msg.get_body())
-            assert len(list(last_email_msg.iter_attachments())) == 0
+        primary_key = "22_46_A1"
+        message, code = model.process_result(primary_key, False, None)
+        assert code == 200
+        assert primary_key in message
+        last_email_msg = app.config.get("TESTING_ONLY_LAST_SMTP_MESSAGE")
+        assert last_email_msg is not None
+        body = str(last_email_msg.get_body()).replace("=\n", "")
+        assert "no correct de-novo assembly has been determined" in body
+        assert len(list(last_email_msg.iter_attachments())) == 0
 
 
-def test_process_result_invalid(app, result_zipfiles):
+def test_process_result_invalid(app):
     with app.app_context():
         # no primary key
         message, code = model.process_result("", False, None)
         assert code == 401
         assert "key" in message
         # valid key, success = True but no file
-        for result_zipfile in result_zipfiles:
-            primary_key = str(result_zipfile.stem)[0:8]
-            message, code = model.process_result(primary_key, True, None)
-            assert code == 401
-            assert "file" in message
-        # valid key, success = True but key doesn't match file
-        primary_key = str(result_zipfiles[0].stem)[0:8]
-        with open(result_zipfiles[1], "rb") as f:
-            message, code = model.process_result(
-                primary_key, True, FileStorage(f, result_zipfiles.__str__())
-            )
+        primary_key = "22_46_A1"
+        message, code = model.process_result(primary_key, True, None)
         assert code == 401
         assert "file" in message
 

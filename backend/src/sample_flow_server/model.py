@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import logging
 from typing import Optional, Dict, Tuple, List
 import smtplib
 from email.message import EmailMessage
@@ -12,11 +14,11 @@ import pathlib
 import datetime
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.datastructures import FileStorage
+from werkzeug.utils import secure_filename
 from dataclasses import dataclass
 from sample_flow_server.logger import get_logger
 from sample_flow_server.utils import get_primary_key
 from sample_flow_server.utils import get_start_of_week
-from sample_flow_server.utils import parse_seq_to_fasta
 import csv
 from sample_flow_server.utils import (
     encode_activation_token,
@@ -93,19 +95,18 @@ class Sample(db.Model):
     name: str = db.Column(db.String(128), nullable=False)
     running_option: str = db.Column(db.String(128), nullable=False)
     concentration: int = db.Column(db.Integer, nullable=False)
-    reference_sequence_description: Optional[str] = db.Column(
-        db.String(256), nullable=True
-    )
     date: datetime.date = db.Column(db.Date, nullable=False)
-    has_results_fasta: bool = db.Column(db.Boolean, nullable=False)
-    has_results_gbk: bool = db.Column(db.Boolean, nullable=False)
+    has_reference_seq_zip: bool = db.Column(db.Boolean, nullable=False)
     has_results_zip: bool = db.Column(db.Boolean, nullable=False)
 
     def results_dir(self) -> str:
         return f"{_get_basepath(self.date)}/results"
 
-    def results_file_path(self, filetype: str) -> str:
-        return f"{self.results_dir()}/{self.primary_key}_{self.name}.{filetype}"
+    def results_file_path(self) -> str:
+        return f"{self.results_dir()}/{self.primary_key}_{self.name}.zip"
+
+    def reference_seq_zip_path(self) -> str:
+        return f"{_get_basepath(self.date)}/inputs/references/{self.primary_key}_{self.name}.zip"
 
 
 def _samples_this_week(current_date: datetime.date):
@@ -222,12 +223,13 @@ def _send_email_message(email_message: EmailMessage) -> None:
         s.send_message(email_message)
 
 
-def _send_result_email(sample: Sample, success: bool) -> Tuple[str, int]:
+def _send_result_email(
+    sample: Sample, success: bool, result_files: Optional[List[pathlib.Path]] = None
+) -> Tuple[str, int]:
     message_head = f"Your sample {sample.primary_key}_{sample.name} has been processed"
     if success:
         message_body = (
-            f" and the results are attached to this email.\n\n"
-            f"You can also download the full analysis data by "
+            f", and you can download the full analysis data by "
             f"logging in to your account at https://circuitseq.iwr.uni-heidelberg.de"
         )
     else:
@@ -247,15 +249,14 @@ def _send_result_email(sample: Sample, success: bool) -> Tuple[str, int]:
             "Subject"
         ] = f"SampleFlow results for sample {sample.primary_key}_{sample.name}"
         if success is True:
-            for filetype in ["fasta", "gbk"]:
-                result_file = sample.results_file_path(filetype)
+            for result_file in result_files:
                 with open(result_file, "rb") as fp:
                     result_file_data = fp.read()
                 msg.add_attachment(
                     result_file_data,
                     maintype="application",
                     subtype="octet-stream",
-                    filename=result_file.split("/")[-1],
+                    filename=result_file.name,
                 )
         _send_email_message(msg)
     except Exception as e:
@@ -296,54 +297,40 @@ def process_result(
         return process_result(sample.tube_primary_key, success, result_zip_file)
     if success is False:
         logger.info("Sending result failure message for {primary_key}")
+        sample.has_results_zip = False
+        db.session.commit()
         return _send_result_email(sample, success)
     if result_zip_file is None:
         logger.warning(f" --> No zipfile")
         return f"Zip file missing", 401
-    if not _is_valid_filename(primary_key, result_zip_file.filename):
-        logger.warning(
-            f"Zip filename '{result_zip_file.filename}' does not match primary key '{primary_key}'"
-        )
-        return f"Zip filename must start with primary key '{primary_key}'", 401
-    logger.info(f"Processing zip file {result_zip_file} for {primary_key}")
-    results_dir = sample.results_dir()
-    pathlib.Path(results_dir).mkdir(parents=True, exist_ok=True)
-    basename = f"{primary_key}_{sample.name}"
-    results_file = pathlib.Path(results_dir) / f"{basename}.zip"
-    result_zip_file.save(results_file)
-    logger.info(f"  --> {results_file}")
-    required_files = [f"{basename}.{filetype}" for filetype in ["fasta", "gbk"]]
-    try:
-        zip_file = zipfile.ZipFile(results_file)
-        extracted_files = []
-        for zip_info in zip_file.infolist():
-            if not zip_info.is_dir():
-                # remove any leading directories from filenames in zip file
-                zip_info.filename = pathlib.Path(zip_info.filename).name
-                # extract only required files
-                if zip_info.filename in required_files:
-                    logger.info(f"  --> {results_dir}/{zip_info.filename}")
-                    zip_file.extract(zip_info, results_dir)
-                    extracted_files.append(zip_info.filename)
-    except Exception as e:
-        logger.warning(f"Failed to process zip file: {e}")
-        return (
-            f"Failed to process zip file: {e}",
-            401,
-        )
-    for required_file in required_files:
-        if required_file not in extracted_files:
-            logger.warning(f"{required_file} not in {zip_file.namelist()}")
-            return (
-                f"Zip file does not contain {required_file}",
-                401,
-            )
-    sample.has_results_fasta = True
-    sample.has_results_gbk = True
+    logger.info(
+        f"Processing zip file {result_zip_file} for {primary_key} --> {sample.results_file_path()}"
+    )
+    pathlib.Path(sample.results_dir()).mkdir(parents=True, exist_ok=True)
+    result_zip_file.save(sample.results_file_path())
     sample.has_results_zip = True
     db.session.commit()
-    email_message, _ = _send_result_email(sample, success)
-    return f"{results_file} saved, {email_message}", 200
+    result_files = []
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        try:
+            zip_file = zipfile.ZipFile(sample.results_file_path())
+            zip_file.extract("email.txt", tmp_dir)
+            with open(f"{tmp_dir}/email.txt") as f:
+                files_to_email = f.readlines()
+            for file_to_email in files_to_email:
+                file_to_email = file_to_email.strip()
+                logger.info(f"Trying to extract {file_to_email} from zipfile")
+                try:
+                    result_files.append(
+                        pathlib.Path(zip_file.extract(file_to_email, tmp_dir))
+                    )
+                    logger.info(f"--> extracted {file_to_email}")
+                except Exception as e:
+                    logging.warning(f"Failed to extract file {file_to_email}: {e}")
+        except Exception as e:
+            logger.warning(f"Failed to process zip file: {e}")
+        email_message, _ = _send_result_email(sample, success, result_files)
+    return f"Results file saved, {email_message}", 200
 
 
 @dataclass
@@ -549,29 +536,38 @@ def add_new_sample(
     name: str,
     running_option: str,
     concentration: int,
-    reference_sequence_file: Optional[FileStorage],
+    reference_sequence_files: List[FileStorage],
 ) -> Tuple[Optional[Sample], str]:
     today = datetime.date.today()
     base_path = _get_basepath(today)
     key, message = _get_new_key(today)
     if key is None:
         return None, message
-    reference_sequence_description: Optional[str] = None
+    has_reference_seq_zip = False
     ref_seq_dir = pathlib.Path(f"{base_path}/inputs/references")
     ref_seq_dir.mkdir(parents=True, exist_ok=True)
-    if reference_sequence_file is not None:
-        ref_seq_filename = str(ref_seq_dir / f"{key}_{name}.fasta")
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            temp_file = pathlib.Path(tmp_dir) / "temp.txt"
-            logger.info(
-                f"Saving {reference_sequence_file.filename} to temporary file {temp_file}"
-            )
-            reference_sequence_file.save(temp_file)
-            reference_sequence_description = parse_seq_to_fasta(
-                temp_file, ref_seq_filename, reference_sequence_file.filename
-            )
-            if reference_sequence_description is None:
-                return None, "Failed to parse reference sequence file."
+    if len(reference_sequence_files) > 0:
+        try:
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                for reference_sequence_file in reference_sequence_files:
+                    filename = secure_filename(reference_sequence_file.filename)
+                    temp_file = pathlib.Path(tmp_dir) / filename
+                    logger.info(
+                        f"Saving {reference_sequence_file.filename} to temporary file {temp_file}"
+                    )
+                    reference_sequence_file.save(temp_file)
+                ref_seq_basename = str(ref_seq_dir / f"{key}_{name}")
+                zip_filename = shutil.make_archive(
+                    base_name=ref_seq_basename,
+                    format="zip",
+                    root_dir=tmp_dir,
+                )
+                logger.info(f"  -> created zip file {zip_filename}")
+            has_reference_seq_zip = True
+        except Exception as e:
+            logger.warning(f"Failed to process supplied reference sequence files")
+            # todo: should we return an error here instead of continuing without the files?
+            logger.exception(e)
     new_sample = Sample(
         email=email,
         primary_key=key,
@@ -579,11 +575,9 @@ def add_new_sample(
         name=name,
         running_option=running_option,
         concentration=concentration,
-        reference_sequence_description=reference_sequence_description,
+        has_reference_seq_zip=has_reference_seq_zip,
         date=today,
         has_results_zip=False,
-        has_results_fasta=False,
-        has_results_gbk=False,
     )
     db.session.add(new_sample)
     db.session.commit()
@@ -608,12 +602,17 @@ def resubmit_sample(primary_key: str) -> Tuple[str, int]:
         name=sample.name,
         running_option=sample.running_option,
         concentration=sample.concentration,
-        reference_sequence_description=sample.reference_sequence_description,
         date=today,
+        has_reference_seq_zip=sample.has_reference_seq_zip,
         has_results_zip=False,
-        has_results_fasta=False,
-        has_results_gbk=False,
     )
+    if sample.has_reference_seq_zip:
+        pathlib.Path(new_sample.reference_seq_zip_path()).resolve().parent.mkdir(
+            parents=True, exist_ok=True
+        )
+        shutil.copy(
+            sample.reference_seq_zip_path(), new_sample.reference_seq_zip_path()
+        )
     db.session.add(new_sample)
     db.session.commit()
     return (

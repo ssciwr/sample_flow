@@ -54,53 +54,23 @@ const emit = defineEmits(["sample_resubmitted"]);
       <td>{{ sample["running_option"] }}</td>
       <td>{{ sample["concentration"] }} ng/μl</td>
       <td>
-        <template v-if="sample['reference_sequence_description']">
+        <template v-if="sample.has_reference_seq_zip">
           <a
             href=""
             @click.prevent="download_reference_sequence(sample['primary_key'])"
           >
-            {{ sample["reference_sequence_description"] }}
+            zip
           </a>
         </template>
-        <template v-else> - </template>
+        <template v-else> -</template>
       </td>
       <td>
-        <template
-          v-if="
-            !(
-              sample.has_results_fasta ||
-              sample.has_results_gbk ||
-              sample.has_results_zip
-            )
-          "
-        >
-          -
+        <template v-if="sample.has_results_zip">
+          <a href="" @click.prevent="download_result(sample.primary_key)"
+            >zip</a
+          >
         </template>
-        <template v-else>
-          <template v-if="sample.has_results_fasta">
-            <a
-              href=""
-              @click.prevent="download_result(sample.primary_key, 'fasta')"
-              >fasta</a
-            >
-            |
-          </template>
-          <template v-if="sample.has_results_gbk">
-            <a
-              href=""
-              @click.prevent="download_result(sample.primary_key, 'gbk')"
-              >gbk</a
-            >
-            |
-          </template>
-          <template v-if="sample.has_results_zip">
-            <a
-              href=""
-              @click.prevent="download_result(sample.primary_key, 'zip')"
-              >zip</a
-            >
-          </template>
-        </template>
+        <template v-else> - </template>
       </td>
       <td v-if="admin && resubmit_button">
         <button @click="resubmit_sample(sample.tube_primary_key)">

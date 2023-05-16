@@ -1,7 +1,7 @@
 from __future__ import annotations
 import pytest
 from sample_flow_server import create_app
-from typing import List
+import shutil
 import flask
 import io
 import os
@@ -33,7 +33,7 @@ def app(monkeypatch, tmp_path):
     temp_data_path = str(tmp_path)
     app = create_app(data_path=temp_data_path)
     ftu.add_test_users(app)
-    ftu.add_test_samples(app)
+    ftu.add_test_samples(app, tmp_path)
     yield app
 
 
@@ -43,11 +43,22 @@ def client(app):
 
 
 @pytest.fixture()
-def result_zipfiles() -> List[pathlib.Path]:
-    results_path = (
-        pathlib.Path(os.path.dirname(os.path.abspath(__file__))) / "data" / "results"
+def result_zipfile(tmp_path) -> pathlib.Path:
+    # make a results zip file with files a.txt, b.txt, c.txt, email.txt
+    results_zipfile_contents = tmp_path / "results_zipfile"
+    results_zipfile_contents.mkdir()
+    result_files = ["a.txt", "b.txt", "c.txt"]
+    for result_file in result_files:
+        with open(results_zipfile_contents / result_file, "w") as f:
+            f.write(f"test file named {result_file}")
+    with open(results_zipfile_contents / "email.txt", "w") as f:
+        f.write("\n".join(["c.txt", "a.txt", "idontexist.txt"]))
+    result_zipfile = pathlib.Path(
+        shutil.make_archive(
+            f"{tmp_path}/result_zipfile", "zip", results_zipfile_contents
+        )
     )
-    return sorted(results_path.glob("*.zip"))
+    yield result_zipfile
 
 
 @pytest.fixture()
@@ -281,28 +292,3 @@ ORIGIN
 //
 """
     return io.BytesIO(gbk_str)
-
-
-@pytest.fixture()
-def ref_seq_snapgene() -> io.BytesIO:
-    # https://www.snapgene.com/resources/plasmid-files/?set=basic_cloning_vectors&plasmid=BlueScribe
-    with (
-        pathlib.Path(os.path.dirname(os.path.abspath(__file__)))
-        / "data"
-        / "sequences"
-        / "BlueScribe.dna"
-    ).open("rb") as f:
-        dna_bytes = io.BytesIO(f.read())
-    return dna_bytes
-
-
-@pytest.fixture()
-def ref_seq_snapgene_noid() -> io.BytesIO:
-    with (
-        pathlib.Path(os.path.dirname(os.path.abspath(__file__)))
-        / "data"
-        / "sequences"
-        / "linear.dna"
-    ).open("rb") as f:
-        dna_bytes = io.BytesIO(f.read())
-    return dna_bytes

@@ -174,38 +174,20 @@ def test_sample_mon_fasta(client, ref_seq_fasta):
     assert new_sample["email"] == "user@embl.de"
     assert new_sample["name"] == "abc"
     assert new_sample["primary_key"] == "22_47_A1"
-    assert new_sample["reference_sequence_description"] == "seq0"
+    assert new_sample["has_reference_seq_zip"] is True
+    assert new_sample["has_results_zip"] is False
     assert new_sample["running_option"] == "r Q"
     assert new_sample["concentration"] == 97
     data_path = pathlib.Path(client.application.config.get("CIRCUITSEQ_DATA_PATH"))
-    fasta_path = data_path / "2022/47/inputs/references/22_47_A1_abc.fasta"
-    assert fasta_path.is_file()
-    with fasta_path.open() as f:
-        assert new_sample["reference_sequence_description"] in f.readline()
+    zip_path = data_path / "2022/47/inputs/references/22_47_A1_abc.zip"
+    assert zip_path.is_file()
+    zip_file = zipfile.ZipFile(zip_path)
+    assert len(zip_file.namelist()) == 1
+    assert "test.fa" in zip_file.namelist()
 
 
 @freeze_time("2022-11-21")
-def test_sample_mon_fasta_invalid(client):
-    headers = _get_auth_headers(client)
-    response = client.post(
-        "/api/sample",
-        data={
-            "name": "abc",
-            "running_option": "r",
-            "concentration": 34,
-            "file": (io.BytesIO(b"invalid_fasta_contents"), "test.fa"),
-        },
-        headers=headers,
-    )
-    assert response.status_code == 401
-    assert response.json["message"] == "Failed to parse reference sequence file."
-    data_path = pathlib.Path(client.application.config.get("CIRCUITSEQ_DATA_PATH"))
-    fasta_path = data_path / "2022/46/inputs/references/22_46_A1_abc.fasta"
-    assert not fasta_path.is_file()
-
-
-@freeze_time("2022-11-21")
-def test_sample_mon_embl(client, ref_seq_embl):
+def test_sample_mon_three_files(client, ref_seq_fasta, ref_seq_embl, ref_seq_genbank):
     headers = _get_auth_headers(client)
     response = client.post(
         "/api/sample",
@@ -213,7 +195,11 @@ def test_sample_mon_embl(client, ref_seq_embl):
             "name": "abc",
             "running_option": "r23",
             "concentration": 11,
-            "file": (ref_seq_embl, "test.embl"),
+            "file": [
+                (ref_seq_embl, "test.embl"),
+                (ref_seq_genbank, "test.gbk"),
+                (ref_seq_fasta, "test.fa"),
+            ],
         },
         headers=headers,
     )
@@ -222,135 +208,39 @@ def test_sample_mon_embl(client, ref_seq_embl):
     assert new_sample["email"] == "user@embl.de"
     assert new_sample["name"] == "abc"
     assert new_sample["primary_key"] == "22_47_A1"
-    assert new_sample["reference_sequence_description"] == "X56734.1"
+    assert new_sample["has_reference_seq_zip"] is True
+    assert new_sample["has_results_zip"] is False
     assert new_sample["running_option"] == "r23"
     assert new_sample["concentration"] == 11
     data_path = pathlib.Path(client.application.config.get("CIRCUITSEQ_DATA_PATH"))
-    fasta_path = data_path / "2022/47/inputs/references/22_47_A1_abc.fasta"
-    assert fasta_path.is_file()
-    with fasta_path.open() as f:
-        assert new_sample["reference_sequence_description"] in f.readline()
-
-
-@freeze_time("2022-11-21")
-def test_sample_mon_genbank(client, ref_seq_genbank):
-    headers = _get_auth_headers(client)
-    response = client.post(
-        "/api/sample",
-        data={
-            "name": "abc",
-            "running_option": "run1",
-            "concentration": 177,
-            "file": (ref_seq_genbank, "test.gbk"),
-        },
-        headers=headers,
-    )
-    assert response.status_code == 200
-    new_sample = response.json["sample"]
-    assert new_sample["email"] == "user@embl.de"
-    assert new_sample["name"] == "abc"
-    assert new_sample["primary_key"] == "22_47_A1"
-    assert new_sample["reference_sequence_description"] == "Z78533.1"
-    assert new_sample["running_option"] == "run1"
-    assert new_sample["concentration"] == 177
-    data_path = pathlib.Path(client.application.config.get("CIRCUITSEQ_DATA_PATH"))
-    fasta_path = data_path / "2022/47/inputs/references/22_47_A1_abc.fasta"
-    assert fasta_path.is_file()
-    with fasta_path.open() as f:
-        assert new_sample["reference_sequence_description"] in f.readline()
-
-
-@freeze_time("2022-11-21")
-def test_sample_mon_snapgene(client, ref_seq_snapgene):
-    headers = _get_auth_headers(client)
-    response = client.post(
-        "/api/sample",
-        data={
-            "name": "abc",
-            "running_option": "run1",
-            "concentration": 131,
-            "file": (ref_seq_snapgene, "test.dna"),
-        },
-        headers=headers,
-    )
-    assert response.status_code == 200
-    new_sample = response.json["sample"]
-    assert new_sample["email"] == "user@embl.de"
-    assert new_sample["name"] == "abc"
-    assert new_sample["primary_key"] == "22_47_A1"
-    assert new_sample["reference_sequence_description"] == "BlueScribe"
-    assert new_sample["running_option"] == "run1"
-    assert new_sample["concentration"] == 131
-    data_path = pathlib.Path(client.application.config.get("CIRCUITSEQ_DATA_PATH"))
-    fasta_path = data_path / "2022/47/inputs/references/22_47_A1_abc.fasta"
-    assert fasta_path.is_file()
-    with fasta_path.open() as f:
-        assert new_sample["reference_sequence_description"] in f.readline()
-
-
-@freeze_time("2022-11-21")
-def test_sample_mon_snapgene_noid(client, ref_seq_snapgene_noid):
-    headers = _get_auth_headers(client)
-    response = client.post(
-        "/api/sample",
-        data={
-            "name": "abc",
-            "running_option": "run1",
-            "concentration": 111,
-            "file": (ref_seq_snapgene_noid, "test_file.dna"),
-        },
-        headers=headers,
-    )
-    assert response.status_code == 200
-    new_sample = response.json["sample"]
-    assert new_sample["email"] == "user@embl.de"
-    assert new_sample["name"] == "abc"
-    assert new_sample["primary_key"] == "22_47_A1"
-    # fallback to filename for description if no id present in file:
-    assert new_sample["reference_sequence_description"] == "test_file"
-    assert new_sample["running_option"] == "run1"
-    assert new_sample["concentration"] == 111
-    data_path = pathlib.Path(client.application.config.get("CIRCUITSEQ_DATA_PATH"))
-    fasta_path = data_path / "2022/47/inputs/references/22_47_A1_abc.fasta"
-    assert fasta_path.is_file()
-    with fasta_path.open() as f:
-        assert new_sample["reference_sequence_description"] in f.readline()
+    zip_path = data_path / "2022/47/inputs/references/22_47_A1_abc.zip"
+    assert zip_path.is_file()
+    zip_file = zipfile.ZipFile(zip_path)
+    assert len(zip_file.namelist()) == 3
+    assert "test.fa" in zip_file.namelist()
+    assert "test.gbk" in zip_file.namelist()
+    assert "test.embl" in zip_file.namelist()
 
 
 def test_result_invalid(client):
-    response = client.post(
-        "/api/result", json={"primary_key": "XYZ", "filetype": "zip"}
-    )
+    response = client.post("/api/result", json={"primary_key": "XYZ"})
     assert response.status_code == 401
     headers = _get_auth_headers(client, "user@embl.de", "user")
-    response = client.post(
-        "/api/result", json={"primary_key": "XYZ", "filetype": "zip"}, headers=headers
-    )
+    response = client.post("/api/result", json={"primary_key": "XYZ"}, headers=headers)
     assert response.status_code == 401
     assert f"Sample not found" in response.json["message"]
     key = "22_46_A2"
-    for filetype in ["exe", "txt"]:
-        response = client.post(
-            "/api/result",
-            json={"primary_key": key, "filetype": filetype},
-            headers=headers,
-        )
-        assert response.status_code == 401
-        assert f"Invalid filetype {filetype}" in response.json["message"]
-    for filetype in ["fasta", "gbk", "zip"]:
-        response = client.post(
-            "/api/result",
-            json={"primary_key": key, "filetype": filetype},
-            headers=headers,
-        )
-        assert response.status_code == 401
-        assert f"No {filetype} results available" in response.json["message"]
+    response = client.post(
+        "/api/result",
+        json={"primary_key": key},
+        headers=headers,
+    )
+    assert response.status_code == 401
+    assert f"No results available" in response.json["message"]
 
 
-def _upload_result(client, result_zipfile: pathlib.Path, primary_key: str = None):
+def _upload_result(client, result_zipfile: pathlib.Path, primary_key: str):
     headers = _get_auth_headers(client, "admin@embl.de", "admin")
-    if primary_key is None:
-        primary_key = result_zipfile.stem[0:8]
     with open(result_zipfile, "rb") as f:
         response = client.post(
             "/api/admin/result",
@@ -364,18 +254,17 @@ def _upload_result(client, result_zipfile: pathlib.Path, primary_key: str = None
     return response
 
 
-def test_result_valid(client, result_zipfiles):
+def test_result_valid(client, result_zipfile):
     headers = _get_auth_headers(client, "user@embl.de", "user")
     key = "22_46_A2"
-    assert _upload_result(client, result_zipfiles[0]).status_code == 200
-    for filetype in ["fasta", "gbk", "zip"]:
-        response = client.post(
-            "/api/result",
-            json={"primary_key": key, "filetype": filetype},
-            headers=headers,
-        )
-        assert response.status_code == 200
-        assert len(response.data) > 1
+    assert _upload_result(client, result_zipfile, key).status_code == 200
+    response = client.post(
+        "/api/result",
+        json={"primary_key": key},
+        headers=headers,
+    )
+    assert response.status_code == 200
+    assert len(response.data) > 1
 
 
 def test_admin_settings_invalid(client):
@@ -505,7 +394,7 @@ def test_admin_zipsamples_valid(client, ref_seq_fasta):
     assert len(filenames) == 3
     assert "samples.tsv" in filenames
     assert "references/" in filenames
-    assert "references/22_47_A1_abc.fasta" in filenames
+    assert "references/22_47_A1_abc.zip" in filenames
     tsv_lines = zip_file.read("samples.tsv").splitlines()
     assert len(tsv_lines) == 2
     assert (
@@ -517,15 +406,14 @@ def test_admin_zipsamples_valid(client, ref_seq_fasta):
     )
 
 
-def test_admin_result_valid(client, result_zipfiles):
-    for result_zipfile in result_zipfiles:
-        response = _upload_result(client, result_zipfile)
-        assert response.status_code == 200
-        assert result_zipfile.name in response.json["message"]
+def test_admin_result_valid(client, result_zipfile):
+    response = _upload_result(client, result_zipfile, "22_46_A2")
+    assert response.status_code == 200
+    assert "file saved" in response.json["message"]
 
 
 @freeze_time("2022-11-21")
-def test_admin_resubmit_sample_valid(client, result_zipfiles):
+def test_admin_resubmit_sample_valid(client, result_zipfile):
     headers = _get_auth_headers(client, "admin@embl.de", "admin")
     primary_key = "22_46_A2"
     new_primary_key = "22_47_A1"
@@ -552,6 +440,6 @@ def test_admin_resubmit_sample_valid(client, result_zipfiles):
         if key not in keys_that_should_differ:
             assert value == resubmitted_sample[key]
     # uploading a result for new primary key -> original primary key
-    response = _upload_result(client, result_zipfiles[0], "22_47_A1")
+    response = _upload_result(client, result_zipfile, "22_47_A1")
     assert response.status_code == 200
     assert primary_key in response.json["message"]

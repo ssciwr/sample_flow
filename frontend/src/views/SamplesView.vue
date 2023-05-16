@@ -5,28 +5,33 @@ import SamplesTable from "@/components/SamplesTable.vue";
 import { apiClient } from "@/utils/api-client";
 import { validate_sample_name } from "@/utils/validation";
 import type { Sample, RunningOptions } from "@/utils/types";
+
 const new_sample_name = ref("");
 const new_sample_concentration = ref(200);
 const new_sample_concentration_min = ref(143);
 const new_sample_concentration_max = ref(1000);
-const selected_file = ref(null as null | Blob);
+const selected_files = ref(null as null | FileList);
 const file_input_key = ref(0);
 const new_sample_error_message = ref("");
 
 function on_file_changed(event: Event) {
   const max_upload_size_mb = 4;
+  let total_upload_size_bytes = 0;
   const target = event.target as HTMLInputElement;
   if (target.files != null && target.files.length > 0) {
-    selected_file.value = target.files[0];
-    if (selected_file.value.size > 1024 * 1024 * max_upload_size_mb) {
-      selected_file.value = null;
+    selected_files.value = target.files;
+    for (const selected_file of target.files) {
+      total_upload_size_bytes += selected_file.size;
+    }
+    if (total_upload_size_bytes > 1024 * 1024 * max_upload_size_mb) {
+      selected_files.value = null;
       file_input_key.value++;
       window.alert(
-        `File is too large: maximum reference sequence file size is ${max_upload_size_mb}MB`
+        `Selected files exceed maximum upload size of ${max_upload_size_mb}MB`
       );
     }
   } else {
-    selected_file.value = null;
+    selected_files.value = null;
   }
 }
 
@@ -58,6 +63,7 @@ const new_sample_concentration_message = computed(() => {
 
 const remaining = ref(0);
 const remaining_message = ref("");
+
 function update_remaining() {
   apiClient
     .get("remaining")
@@ -70,6 +76,7 @@ function update_remaining() {
       remaining_message.value = "Error: could not connect to server";
     });
 }
+
 update_remaining();
 
 const current_samples = ref([] as Sample[]);
@@ -105,8 +112,10 @@ function add_sample() {
   formData.append("name", new_sample_name.value);
   formData.append("running_option", new_running_option.value);
   formData.append("concentration", String(new_sample_concentration.value));
-  if (selected_file.value !== null) {
-    formData.append("file", selected_file.value);
+  if (selected_files.value !== null) {
+    for (const file of selected_files.value) {
+      formData.append("file", file);
+    }
   }
   apiClient
     .post("sample", formData, {
@@ -123,7 +132,7 @@ function add_sample() {
     });
   update_remaining();
   new_sample_name.value = "";
-  selected_file.value = null;
+  selected_files.value = null;
   file_input_key.value++;
 }
 </script>
@@ -146,8 +155,8 @@ function add_sample() {
     <ListItem title="Submit a sample" icon="bi-clipboard-plus">
       <template v-if="remaining > 0">
         <p>
-          To submit a new sample, enter a sample name, and optionally upload a
-          fasta file containing a reference sequence:
+          To submit a new sample, enter a sample name, and optionally upload any
+          reference sequence files:
         </p>
         <form @submit.prevent="add_sample">
           <p>
@@ -194,6 +203,7 @@ function add_sample() {
               type="file"
               id="ref_seq_file"
               name="file"
+              :multiple="true"
               @change="on_file_changed($event)"
               :key="file_input_key"
               title="Optionally upload a fasta file reference sequence"
