@@ -1,6 +1,7 @@
 import argon2
 from sample_flow_server.model import User, Sample, db
 import datetime
+import pathlib
 
 
 def add_test_users(app):
@@ -20,32 +21,34 @@ def add_test_users(app):
             db.session.commit()
 
 
-def add_test_samples(app):
+def add_test_samples(app, data_path: pathlib.Path):
     with app.app_context():
         # add samples for tests
         week = 46
         for n, name in zip(
             [1, 2, 3, 4],
             [
-                "no_ref_seq",
+                "ref_seq",
                 "ZIP_TEST_pMC_Final_Kan",
                 "ZIP_TEST_pCW571",
                 "ZIP_TEST_pDONR_amilCP",
             ],
         ):
             key = f"22_{week}_A{n}"
+            ref_dir = data_path / "2022" / f"{week}" / "inputs" / "references"
+            ref_dir.mkdir(parents=True, exist_ok=True)
+            with open(ref_dir / f"{key}_{name}.zip", "w") as f:
+                f.write("abc123")
             new_sample = Sample(
                 email="user@embl.de",
                 name=name,
                 primary_key=key,
                 tube_primary_key=key,
-                reference_sequence_description=None,
                 running_option="running_option",
                 concentration=100 + 13 * n,
                 date=datetime.date.fromisocalendar(2022, week, n),
+                has_reference_seq_zip=True,
                 has_results_zip=False,
-                has_results_fasta=False,
-                has_results_gbk=False,
             )
             db.session.add(new_sample)
             db.session.commit()

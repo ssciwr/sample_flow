@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sample_flow_server"
-description = "Add short description here"
+description = "SampleFlow backend"
 readme = "README.md"
 maintainers = [{ name = "Liam Keegan", email = "ssc@iwr.uni-heidelberg.de" }]
 dynamic = ["version"]
@@ -22,9 +22,7 @@ dependencies = [
   "flask-sqlalchemy",
   "argon2-cffi",
   "click",
-  "biopython",
   "gunicorn",
-  "snapgene_reader",
   "itsdangerous",
 ]
 

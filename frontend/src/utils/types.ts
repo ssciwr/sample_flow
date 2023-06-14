@@ -1,16 +1,14 @@
 export type Sample = {
   id: number;
+  email: string;
   primary_key: string;
   tube_primary_key: string;
   name: string;
-  email: string;
   running_option: string;
   concentration: number;
-  reference_sequence_description: string | null;
   date: string;
+  has_reference_seq_zip: boolean;
   has_results_zip: boolean;
-  has_results_fasta: boolean;
-  has_results_gbk: boolean;
 };
 
 export type User = {

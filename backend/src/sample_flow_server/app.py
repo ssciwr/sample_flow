@@ -173,33 +173,24 @@ def create_app(data_path: str = "/sample_flow_data"):
         if user_sample is None:
             logger.info(f"  -> sample with key {primary_key} not found")
             return jsonify(message="Sample not found"), 401
-        if user_sample.reference_sequence_description is None:
+        if not user_sample.has_reference_seq_zip:
             logger.info(
                 f"  -> sample with key {primary_key} found but does not contain a reference sequence"
             )
             return jsonify(message="Sample does not contain a reference sequence"), 401
-        logger.info(
-            f"  -> found reference sequence with description {user_sample.reference_sequence_description}"
-        )
-        year, week, day = user_sample.date.isocalendar()
-        filename = f"{data_path}/{year}/{week}/inputs/references/{user_sample.primary_key}_{user_sample.name}.fasta"
-        fasta_file = pathlib.Path(filename)
-        if not fasta_file.is_file():
-            logger.info(f"  -> fasta file {fasta_file} not found")
-            return jsonify(message="Fasta file not found"), 401
-        logger.info(f"Returning fasta file {fasta_file}")
-        return flask.send_file(fasta_file, as_attachment=True)
+        requested_file = pathlib.Path(user_sample.reference_seq_zip_path())
+        if not requested_file.is_file():
+            logger.info(f"  -> file {requested_file} not found")
+            return jsonify(message=f"Reference sequence file not found"), 401
+        logger.info(f"Returning file {user_sample.reference_seq_zip_path()}")
+        return flask.send_file(user_sample.reference_seq_zip_path(), as_attachment=True)
 
     @app.route("/api/result", methods=["POST"])
     @jwt_required()
     def result():
         primary_key = request.json.get("primary_key", None)
-        filetype = request.json.get("filetype", None)
-        if filetype not in ["fasta", "gbk", "zip"]:
-            logger.info(f"  -> invalid filetype {filetype} requested")
-            return jsonify(message=f"Invalid filetype {filetype} requested"), 401
         logger.info(
-            f"User {current_user.email} requesting {filetype} results for key {primary_key}"
+            f"User {current_user.email} requesting results for key {primary_key}"
         )
         filters = {"primary_key": primary_key}
         if not current_user.is_admin:
@@ -210,22 +201,16 @@ def create_app(data_path: str = "/sample_flow_data"):
         if user_sample is None:
             logger.info(f"  -> sample with key {primary_key} not found")
             return jsonify(message="Sample not found"), 401
-        if (
-            (filetype == "fasta" and not user_sample.has_results_fasta)
-            or (filetype == "gbk" and not user_sample.has_results_gbk)
-            or (filetype == "zip" and not user_sample.has_results_zip)
-        ):
+        if not user_sample.has_results_zip:
             logger.info(
-                f"  -> sample with key {primary_key} found but no {filetype} results available"
+                f"  -> sample with key {primary_key} found but no results available"
             )
-            return jsonify(message=f"No {filetype} results available"), 401
-        year, week, day = user_sample.date.isocalendar()
-        filename = f"{data_path}/{year}/{week}/results/{user_sample.primary_key}_{user_sample.name}.{filetype}"
-        requested_file = pathlib.Path(filename)
+            return jsonify(message=f"No results available"), 401
+        requested_file = pathlib.Path(user_sample.results_file_path())
         if not requested_file.is_file():
-            logger.info(f"  -> {filetype} file {requested_file} not found")
-            return jsonify(message=f"Results {filetype} file not found"), 401
-        logger.info(f"Returning {filetype} file {requested_file}")
+            logger.info(f"  -> file {requested_file} not found")
+            return jsonify(message=f"Results file not found"), 401
+        logger.info(f"Returning file {requested_file}")
         return flask.send_file(requested_file, as_attachment=True)
 
     @app.route("/api/sample", methods=["POST"])
@@ -236,10 +221,10 @@ def create_app(data_path: str = "/sample_flow_data"):
         name = form_as_dict.get("name", "")
         running_option = form_as_dict.get("running_option", "")
         concentration = int(form_as_dict.get("concentration", "0"))
-        reference_sequence_file = request.files.to_dict().get("file", None)
+        reference_sequence_files = request.files.getlist("file")
         logger.info(f"Adding sample {name} from {email}")
         new_sample, error_message = add_new_sample(
-            email, name, running_option, concentration, reference_sequence_file
+            email, name, running_option, concentration, reference_sequence_files
         )
         if new_sample is not None:
             logger.info(f"  - > success")

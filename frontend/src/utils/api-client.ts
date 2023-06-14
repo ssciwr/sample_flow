@@ -41,15 +41,15 @@ function download_reference_sequence(primary_key: string) {
   download_file_from_endpoint(
     "reference_sequence",
     { primary_key: primary_key },
-    `${primary_key}_reference_sequence.fasta`
+    `${primary_key}_reference_sequence.zip`
   );
 }
 
-function download_result(primary_key: string, filetype: string) {
+function download_result(primary_key: string) {
   download_file_from_endpoint(
     "result",
-    { primary_key: primary_key, filetype: filetype },
-    `${primary_key}.${filetype}`
+    { primary_key: primary_key },
+    `${primary_key}.zip`
   );
 }
 
