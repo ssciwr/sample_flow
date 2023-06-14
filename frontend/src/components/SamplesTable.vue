@@ -2,6 +2,7 @@
 // @ts-ignore
 import {
   apiClient,
+  logout,
   download_reference_sequence,
   download_result,
 } from "@/utils/api-client";
@@ -16,6 +17,9 @@ function resubmit_sample(primary_key: string) {
       emit("sample_resubmitted");
     })
     .catch((error) => {
+      if (error.response.status > 400) {
+        logout();
+      }
       alert(error.response.data.message);
     });
 }

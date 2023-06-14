@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { apiClient } from "@/utils/api-client";
+import { apiClient, logout } from "@/utils/api-client";
 import { validate_password } from "@/utils/validation";
 import { useUserStore } from "@/stores/user";
 import ListItem from "@/components/ListItem.vue";
@@ -41,6 +41,9 @@ function do_change_password() {
       response_message.value = response.data.message;
     })
     .catch((error) => {
+      if (error.response.status > 400) {
+        logout();
+      }
       response_message.value = error.response.data.message;
     });
 }

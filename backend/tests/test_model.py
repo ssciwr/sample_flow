@@ -33,7 +33,7 @@ def test_settings(app, tmp_path):
         assert new_settings["plate_n_cols"] == 18
         # settings dict missing required fields is a no-op
         msg, code = model.set_current_settings(email, {"plate_n_rows": 10})
-        assert code == 401
+        assert code == 400
         assert "settings not updated" in msg
         assert _count_settings() == 2
         assert new_settings["plate_n_rows"] == 14
@@ -165,7 +165,7 @@ def test_add_new_user_invalid(app):
     with app.app_context():
         for email in ["joe@gmail.com", "@embl.de"]:
             msg, code = model.add_new_user(email, password_valid, is_admin=False)
-            assert code == 401
+            assert code == 400
             assert "email" in msg
         for password in [
             "",
@@ -175,10 +175,10 @@ def test_add_new_user_invalid(app):
             "asd!(*&@#@!(*#%ASDASDFGK",
         ]:
             msg, code = model.add_new_user(email_valid, password, is_admin=False)
-            assert code == 401
+            assert code == 400
             assert "Password" in msg
         msg, code = model.add_new_user("user@embl.de", password_valid, is_admin=False)
-        assert code == 401
+        assert code == 400
         assert msg == "This email address is already in use"
 
 
@@ -269,12 +269,12 @@ def test_process_result_invalid(app):
     with app.app_context():
         # no primary key
         message, code = model.process_result("", False, None)
-        assert code == 401
+        assert code == 400
         assert "key" in message
         # valid key, success = True but no file
         primary_key = "22_46_A1"
         message, code = model.process_result(primary_key, True, None)
-        assert code == 401
+        assert code == 400
         assert "file" in message
 
 
@@ -307,13 +307,13 @@ def test_reset_password(app):
         # use incorrect token
         msg, code = model.reset_user_password("wrongtoken", email, new_password)
         assert "invalid" in msg.lower()
-        assert code == 401
+        assert code == 400
         # use incorrect email
         msg, code = model.reset_user_password(
             reset_token, "wrong@email.com", new_password
         )
         assert "invalid" in msg.lower()
-        assert code == 401
+        assert code == 400
         # use correct token & email
         msg, code = model.reset_user_password(reset_token, email, new_password)
         assert "password changed" in msg.lower()

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import ListItem from "@/components/ListItem.vue";
 import { ref, computed } from "vue";
-import { apiClient } from "@/utils/api-client";
+import { apiClient, logout } from "@/utils/api-client";
 import { validate_password } from "@/utils/validation";
 const props = defineProps({ reset_token: String });
 
@@ -46,6 +46,9 @@ function reset_password() {
       show_form.value = false;
     })
     .catch((error) => {
+      if (error.response.status > 400) {
+        logout();
+      }
       if (error.response != null) {
         message.value = error.response.data.message;
       } else {

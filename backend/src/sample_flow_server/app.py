@@ -46,8 +46,8 @@ def create_app(data_path: str = "/sample_flow_data"):
         )
         # new secret key -> invalidates any existing tokens
         app.config["JWT_SECRET_KEY"] = secrets.token_urlsafe(64)
-    # tokens are by default valid for 30mins
-    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = datetime.timedelta(minutes=30)
+    # tokens are by default valid for 1 hour
+    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = datetime.timedelta(minutes=60)
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{data_path}/SampleFlow.db"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     # limit max file upload size to 384mb
@@ -82,13 +82,13 @@ def create_app(data_path: str = "/sample_flow_data"):
         ).scalar_one_or_none()
         if not user:
             logger.info("  -> user not found")
-            return jsonify(message="Unknown email address"), 401
+            return jsonify(message="Unknown email address"), 400
         if not user.activated:
             logger.info("  -> user not activated")
-            return jsonify(message="User account is not yet activated"), 401
+            return jsonify(message="User account is not yet activated"), 400
         if not user.check_password(password):
             logger.info("  -> wrong password")
-            return jsonify(message="Incorrect password"), 401
+            return jsonify(message="Incorrect password"), 400
         logger.info("  -> returning JWT access token")
         access_token = create_access_token(identity=user)
         return jsonify(user=user.as_dict(), access_token=access_token)
@@ -115,13 +115,13 @@ def create_app(data_path: str = "/sample_flow_data"):
     def reset_password():
         token = request.json.get("reset_token", None)
         if token is None:
-            return jsonify(message="Reset token missing"), 401
+            return jsonify(message="Reset token missing"), 400
         email = request.json.get("email", None)
         if email is None:
-            return jsonify(message="Email address missing"), 401
+            return jsonify(message="Email address missing"), 400
         new_password = request.json.get("new_password", None)
         if new_password is None:
-            return jsonify(message="New password missing"), 401
+            return jsonify(message="New password missing"), 400
         message, code = reset_user_password(token, email, new_password)
         return jsonify(message=message), code
 
@@ -130,16 +130,16 @@ def create_app(data_path: str = "/sample_flow_data"):
     def change_password():
         current_password = request.json.get("current_password", None)
         if current_password is None:
-            return jsonify(message="Current password missing"), 401
+            return jsonify(message="Current password missing"), 400
         new_password = request.json.get("new_password", None)
         if new_password is None:
-            return jsonify(message="New password missing"), 401
+            return jsonify(message="New password missing"), 400
         logger.info(f"Password change request from {current_user.email}")
         if current_user.set_password(current_password, new_password):
             return jsonify(message="Password changed.")
         return (
             jsonify(message="Failed to change password: current password incorrect."),
-            401,
+            400,
         )
 
     @app.route("/api/remaining", methods=["GET"])
@@ -172,16 +172,16 @@ def create_app(data_path: str = "/sample_flow_data"):
         ).scalar_one_or_none()
         if user_sample is None:
             logger.info(f"  -> sample with key {primary_key} not found")
-            return jsonify(message="Sample not found"), 401
+            return jsonify(message="Sample not found"), 400
         if not user_sample.has_reference_seq_zip:
             logger.info(
                 f"  -> sample with key {primary_key} found but does not contain a reference sequence"
             )
-            return jsonify(message="Sample does not contain a reference sequence"), 401
+            return jsonify(message="Sample does not contain a reference sequence"), 400
         requested_file = pathlib.Path(user_sample.reference_seq_zip_path())
         if not requested_file.is_file():
             logger.info(f"  -> file {requested_file} not found")
-            return jsonify(message=f"Reference sequence file not found"), 401
+            return jsonify(message=f"Reference sequence file not found"), 400
         logger.info(f"Returning file {user_sample.reference_seq_zip_path()}")
         return flask.send_file(user_sample.reference_seq_zip_path(), as_attachment=True)
 
@@ -200,16 +200,16 @@ def create_app(data_path: str = "/sample_flow_data"):
         ).scalar_one_or_none()
         if user_sample is None:
             logger.info(f"  -> sample with key {primary_key} not found")
-            return jsonify(message="Sample not found"), 401
+            return jsonify(message="Sample not found"), 400
         if not user_sample.has_results_zip:
             logger.info(
                 f"  -> sample with key {primary_key} found but no results available"
             )
-            return jsonify(message=f"No results available"), 401
+            return jsonify(message=f"No results available"), 400
         requested_file = pathlib.Path(user_sample.results_file_path())
         if not requested_file.is_file():
             logger.info(f"  -> file {requested_file} not found")
-            return jsonify(message=f"Results file not found"), 401
+            return jsonify(message=f"Results file not found"), 400
         logger.info(f"Returning file {requested_file}")
         return flask.send_file(requested_file, as_attachment=True)
 
@@ -229,13 +229,13 @@ def create_app(data_path: str = "/sample_flow_data"):
         if new_sample is not None:
             logger.info(f"  - > success")
             return jsonify(sample=new_sample)
-        return jsonify(message=error_message), 401
+        return jsonify(message=error_message), 400
 
     @app.route("/api/admin/settings", methods=["GET", "POST"])
     @jwt_required()
     def admin_settings():
         if not current_user.is_admin:
-            return jsonify(message="Admin account required"), 401
+            return jsonify(message="Admin account required"), 400
         if flask.request.method == "POST":
             message, code = set_current_settings(current_user.email, request.json)
             return jsonify(message=message), code
@@ -246,14 +246,14 @@ def create_app(data_path: str = "/sample_flow_data"):
     @jwt_required()
     def admin_all_samples():
         if not current_user.is_admin:
-            return jsonify(message="Admin account required"), 401
+            return jsonify(message="Admin account required"), 400
         return jsonify(get_samples())
 
     @app.route("/api/admin/resubmit_sample", methods=["POST"])
     @jwt_required()
     def admin_resubmit_sample():
         if not current_user.is_admin:
-            return jsonify(message="Admin account required"), 401
+            return jsonify(message="Admin account required"), 400
         primary_key = request.json.get("primary_key", "")
         message, code = resubmit_sample(primary_key)
         return jsonify(message=message), code
@@ -262,7 +262,7 @@ def create_app(data_path: str = "/sample_flow_data"):
     @jwt_required()
     def admin_zip_samples():
         if not current_user.is_admin:
-            return jsonify(message="Admin account required"), 401
+            return jsonify(message="Admin account required"), 400
         logger.info(
             f"Request for zipfile of samples from Admin user {current_user.email}"
         )
@@ -275,7 +275,7 @@ def create_app(data_path: str = "/sample_flow_data"):
         if current_user.is_admin:
             users = db.session.execute(db.select(User)).scalars().all()
             return jsonify(users=[user.as_dict() for user in users])
-        return jsonify(message="Admin account required"), 401
+        return jsonify(message="Admin account required"), 400
 
     @app.route("/api/admin/token", methods=["GET"])
     @jwt_required()
@@ -285,13 +285,13 @@ def create_app(data_path: str = "/sample_flow_data"):
                 identity=current_user, expires_delta=datetime.timedelta(weeks=26)
             )
             return jsonify(access_token=access_token)
-        return jsonify(message="Admin account required"), 401
+        return jsonify(message="Admin account required"), 400
 
     @app.route("/api/admin/result", methods=["POST"])
     @jwt_required()
     def admin_upload_result():
         if not current_user.is_admin:
-            return jsonify(message="Admin account required"), 401
+            return jsonify(message="Admin account required"), 400
         email = current_user.email
         form_as_dict = request.form.to_dict()
         primary_key = form_as_dict.get("primary_key", "")
@@ -299,12 +299,12 @@ def create_app(data_path: str = "/sample_flow_data"):
         logger.info(f"Result upload for '{primary_key}' from user {email}")
         if success is None or success.lower() not in ["true", "false"]:
             logger.info(f"  -> missing success key")
-            return jsonify(message="Missing key: success=True/False"), 401
+            return jsonify(message="Missing key: success=True/False"), 400
         success = success.lower() == "true"
         zipfile = request.files.to_dict().get("file", None)
         if success is True and zipfile is None:
             logger.info(f"  -> missing zipfile")
-            return jsonify(message="Result has success=True but no file"), 401
+            return jsonify(message="Result has success=True but no file"), 400
         message, code = process_result(primary_key, success, zipfile)
         return jsonify(message=message), code
 

@@ -3,7 +3,7 @@ import ListItem from "@/components/ListItem.vue";
 import SamplesTable from "@/components/SamplesTable.vue";
 import { ref, computed } from "vue";
 import type { Sample, User, Settings } from "@/utils/types";
-import { apiClient, download_zipsamples } from "@/utils/api-client";
+import { apiClient, download_zipsamples, logout } from "@/utils/api-client";
 
 function generate_api_token() {
   apiClient.get("admin/token").then((response) => {
@@ -12,7 +12,10 @@ function generate_api_token() {
       .then(() => {
         console.log("API token copied to clipboard");
       })
-      .catch(() => {
+      .catch((error) => {
+        if (error.response.status > 400) {
+          logout();
+        }
         console.log("Failed to copy API token to clipboard");
       });
   });
@@ -22,28 +25,52 @@ const current_samples = ref([] as Sample[]);
 const previous_samples = ref([] as Sample[]);
 
 function get_samples() {
-  apiClient.get("admin/samples").then((response) => {
-    current_samples.value = response.data.current_samples;
-    previous_samples.value = response.data.previous_samples;
-  });
+  apiClient
+    .get("admin/samples")
+    .then((response) => {
+      current_samples.value = response.data.current_samples;
+      previous_samples.value = response.data.previous_samples;
+    })
+    .catch((error) => {
+      if (error.response.status > 400) {
+        logout();
+      }
+      console.log(error);
+    });
 }
 
 get_samples();
 
 const users = ref([] as User[]);
-apiClient.get("admin/users").then((response) => {
-  users.value = response.data.users;
-});
+apiClient
+  .get("admin/users")
+  .then((response) => {
+    users.value = response.data.users;
+  })
+  .catch((error) => {
+    if (error.response.status > 400) {
+      logout();
+    }
+    console.log(error);
+  });
 
 const settings = ref({} as Settings);
 const days = [1, 2, 3, 4, 5, 6, 7];
 const last_submission_day = ref(1);
 const new_running_option = ref("");
 const settings_message = ref("");
-apiClient.get("admin/settings").then((response) => {
-  settings.value = response.data;
-  last_submission_day.value = settings.value.last_submission_day;
-});
+apiClient
+  .get("admin/settings")
+  .then((response) => {
+    settings.value = response.data;
+    last_submission_day.value = settings.value.last_submission_day;
+  })
+  .catch((error) => {
+    if (error.response.status > 400) {
+      logout();
+    }
+    console.log(error);
+  });
 
 function add_running_option() {
   settings.value.running_options.push(new_running_option.value);
@@ -80,6 +107,9 @@ function save_settings() {
       settings_message.value = response.data.message;
     })
     .catch((error) => {
+      if (error.response.status > 400) {
+        logout();
+      }
       settings_message.value = error.response.data.message;
     });
 }
@@ -117,6 +147,9 @@ function upload_result() {
         upload_result_message.value = response.data.message;
       })
       .catch((error) => {
+        if (error.response.status > 400) {
+          logout();
+        }
         upload_result_message.value = error.response.data.message;
       });
   }
