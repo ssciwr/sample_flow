@@ -23,9 +23,6 @@ function download_file_from_endpoint(
 ) {
   apiClient
     .post(endpoint, json, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
       responseType: "blob",
     })
     .then((response) => {
